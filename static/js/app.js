@@ -3,7 +3,7 @@
    ============================================================================== */
 
 // URL Base de la API local (Se adapta automáticamente si se abre como archivo local file://)
-const API_URL = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : ''; 
+const API_URL = window.location.protocol === 'file:' ? 'http://127.0.0.1:5001' : ''; 
 
 // Estado Global de la SPA
 let usuarioActivo = null;
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inicializarAutenticacion();
     registrarEventosMenu();
     obtenerTipoCambioGlobal();
+    cargarLogoEmpresa();
 });
 
 /* ==============================================================================
@@ -184,6 +185,32 @@ async function obtenerTipoCambioGlobal() {
         }
     } catch (err) {
         console.error("Error al obtener tipo de cambio:", err);
+    }
+}
+
+/* ==============================================================================
+   LOGOTIPO DE LA EMPRESA GLOBAL
+   ============================================================================== */
+async function cargarLogoEmpresa() {
+    try {
+        const res = await fetch(`${API_URL}/api/config`);
+        const config = await res.json();
+        const logoDiv = document.querySelector('.sidebar-logo');
+        if (logoDiv) {
+            if (config && config.logo_path) {
+                logoDiv.innerHTML = `
+                    <img src="${API_URL}${config.logo_path}" style="height:32px; width:32px; object-fit:contain; border-radius:4px;" alt="Logo" />
+                    <div class="logo-text">ERP/POS</div>
+                `;
+            } else {
+                logoDiv.innerHTML = `
+                    <div class="logo-icon">EG</div>
+                    <div class="logo-text">ERP/POS</div>
+                `;
+            }
+        }
+    } catch (err) {
+        console.error("Error al cargar logotipo de la empresa:", err);
     }
 }
 

@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS configuracion_sistema (
     empresa_email TEXT,
     moneda_defecto TEXT DEFAULT 'PEN', -- 'PEN' o 'USD'
     tipo_cambio_actual REAL NOT NULL DEFAULT 3.7500, -- Tipo de cambio del día (Soles por 1 Dólar)
+    logo_path TEXT, -- Ruta del logotipo de la empresa
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -3,6 +3,8 @@ import sys
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.security import check_password_hash
+from PIL import Image
+import io
 
 # Asegurar que el directorio raíz esté en el path para importar módulos internos
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -114,6 +116,77 @@ def config_sistema():
             """, (nuevo_tc, usuario_id))
             
         return jsonify({"exito": True, "mensaje": "Configuración actualizada con éxito."})
+
+# ==============================================================================
+# MÓDULO: CONFIGURACIÓN - LOGOTIPO
+# ==============================================================================
+@app.route('/api/config/logo', methods=['POST', 'DELETE'])
+def gestionar_logo():
+    if request.method == 'POST':
+        if 'logo' not in request.files:
+            return jsonify({"exito": False, "mensaje": "No se subió ningún archivo de logotipo."}), 400
+        
+        file = request.files['logo']
+        if file.filename == '':
+            return jsonify({"exito": False, "mensaje": "El nombre de archivo está vacío."}), 400
+        
+        # Validar tipo de archivo
+        extension = os.path.splitext(file.filename)[1].lower()
+        if extension not in ['.png', '.jpg', '.jpeg']:
+            return jsonify({"exito": False, "mensaje": "Formato no permitido. Solo se aceptan imágenes PNG, JPG y JPEG."}), 400
+        
+        # Validar tamaño del archivo (máximo 2 MB)
+        file.seek(0, os.SEEK_END)
+        file_length = file.tell()
+        if file_length > 2 * 1024 * 1024:
+            return jsonify({"exito": False, "mensaje": "El archivo excede el tamaño máximo permitido de 2 MB."}), 400
+        
+        # Regresar cursor al principio
+        file.seek(0)
+        
+        try:
+            # Procesar con Pillow
+            img = Image.open(file.stream)
+            # Asegurar canal alfa para transparencia
+            img = img.convert("RGBA")
+            # Redimensionar usando thumbnail para mantener aspecto y no deformar
+            img.thumbnail((300, 300), Image.Resampling.LANCZOS)
+            
+            # Asegurar directorio de almacenamiento
+            storage_dir = os.path.abspath(os.path.join(app.static_folder, 'storage'))
+            os.makedirs(storage_dir, exist_ok=True)
+            
+            save_path = os.path.join(storage_dir, 'logo_empresa.png')
+            
+            # Guardar como PNG transparente
+            img.save(save_path, "PNG")
+            
+            # Registrar ruta en la base de datos
+            logo_rel_path = '/storage/logo_empresa.png'
+            execute_db("UPDATE configuracion_sistema SET logo_path = ? WHERE id = (SELECT id FROM configuracion_sistema LIMIT 1)", [logo_rel_path])
+            
+            return jsonify({
+                "exito": True,
+                "logo_path": logo_rel_path,
+                "mensaje": "Logotipo subido y optimizado con éxito."
+            })
+        except Exception as e:
+            return jsonify({"exito": False, "mensaje": f"Error al procesar la imagen: {str(e)}"}), 500
+            
+    elif request.method == 'DELETE':
+        try:
+            # Obtener logo anterior
+            config = query_db("SELECT logo_path FROM configuracion_sistema LIMIT 1", one=True)
+            if config and config['logo_path']:
+                logo_file_path = os.path.abspath(os.path.join(app.static_folder, config['logo_path'].lstrip('/')))
+                if os.path.exists(logo_file_path):
+                    os.remove(logo_file_path)
+            
+            # Limpiar en base de datos
+            execute_db("UPDATE configuracion_sistema SET logo_path = NULL WHERE id = (SELECT id FROM configuracion_sistema LIMIT 1)")
+            return jsonify({"exito": True, "mensaje": "Logotipo eliminado con éxito."})
+        except Exception as e:
+            return jsonify({"exito": False, "mensaje": f"Error al eliminar el logotipo: {str(e)}"}), 500
 
 # ==============================================================================
 # MÓDULO: CATEGORÍAS

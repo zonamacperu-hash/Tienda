@@ -155,3 +155,6 @@ Thumbs.db
 # SQLite DB
 database/*.sqlite
 database/*.db
+
+# User Uploaded Storage
+static/storage/

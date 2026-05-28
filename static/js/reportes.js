@@ -113,10 +113,13 @@ async function exportarPDFUtilidades() {
         const totalUtilidadesUSD = stats.utilidades.USD;
 
         printContainer.innerHTML = `
-            <div style="display:flex; justify-content:between; align-items:center; border-bottom:2px solid #6366f1; padding-bottom:16px; margin-bottom:24px;">
-                <div>
-                    <h1 style="font-size:22px; font-weight:800; color:#4f46e5; margin:0 0 4px;">${config.empresa_nombre}</h1>
-                    <p style="margin:0; color:#6b7280; font-size:10px;">RUC: ${config.empresa_ruc} | Dirección: ${config.empresa_direccion || ''}</p>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #6366f1; padding-bottom:16px; margin-bottom:24px;">
+                <div style="display:flex; align-items:center; gap:16px;">
+                    ${config.logo_path ? `<img src="${API_URL}${config.logo_path}" style="height:50px; width:50px; object-fit:contain; border-radius:4px;" alt="Logo" />` : ''}
+                    <div>
+                        <h1 style="font-size:22px; font-weight:800; color:#4f46e5; margin:0 0 4px;">${config.empresa_nombre}</h1>
+                        <p style="margin:0; color:#6b7280; font-size:10px;">RUC: ${config.empresa_ruc} | Dirección: ${config.empresa_direccion || ''}</p>
+                    </div>
                 </div>
                 <div style="text-align:right;">
                     <h2 style="font-size:14px; color:#4f46e5; font-weight:800; margin:0;">REPORTE DE UTILIDADES</h2>

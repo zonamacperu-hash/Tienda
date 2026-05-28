@@ -9,59 +9,99 @@ async function renderConfiguracion(container) {
     container.innerHTML = `
         <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px; align-items:start;">
             
-            <!-- Datos de la Empresa y T.C. -->
-            <div class="card">
-                <div class="card-title">Datos de la Empresa & Tipo de Cambio</div>
-                <form id="form-configuracion-empresa">
-                    <div class="form-row">
-                        <div class="form-group" style="flex:2;">
-                            <label class="form-label" for="config-empresa">Nombre o Razón Social</label>
-                            <input type="text" class="form-input" id="config-empresa" required>
+            <div style="display:flex; flex-direction:column; gap:24px;">
+                <!-- Datos de la Empresa y T.C. -->
+                <div class="card">
+                    <div class="card-title">Datos de la Empresa & Tipo de Cambio</div>
+                    <form id="form-configuracion-empresa">
+                        <div class="form-row">
+                            <div class="form-group" style="flex:2;">
+                                <label class="form-label" for="config-empresa">Nombre o Razón Social</label>
+                                <input type="text" class="form-input" id="config-empresa" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="config-ruc">RUC</label>
+                                <input type="text" class="form-input" id="config-ruc" maxlength="11" required>
+                            </div>
                         </div>
+                        
                         <div class="form-group">
-                            <label class="form-label" for="config-ruc">RUC</label>
-                            <input type="text" class="form-input" id="config-ruc" maxlength="11" required>
+                            <label class="form-label" for="config-direccion">Dirección Fiscal</label>
+                            <input type="text" class="form-input" id="config-direccion">
+                        </div>
+    
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="config-telefono">Teléfono</label>
+                                <input type="text" class="form-input" id="config-telefono">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="config-email">Email Corporativo</label>
+                                <input type="email" class="form-input" id="config-email">
+                            </div>
+                        </div>
+    
+                        <div class="form-row" style="border-top:1px dashed var(--border-color); padding-top:16px; margin-top:12px;">
+                            <div class="form-group">
+                                <label class="form-label" for="config-moneda">Moneda por Defecto</label>
+                                <select class="form-select" id="config-moneda" required>
+                                    <option value="PEN">Soles (PEN)</option>
+                                    <option value="USD">Dólares (USD)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="config-tc-diario" style="color:var(--color-warning); font-weight:bold;">Tipo de Cambio del Día (Soles/Dólar)</label>
+                                <input type="number" step="0.0001" min="0.01" class="form-input" id="config-tc-diario" required>
+                            </div>
+                        </div>
+    
+                        <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+                            <button class="btn btn-primary" type="button" id="btn-guardar-config">
+                                <i data-lucide="save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Logotipo de la Empresa (Carga y Previsualización) -->
+                <div class="card">
+                    <div class="card-title">Logotipo de la Empresa</div>
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        <div style="font-size:0.8rem; color:var(--text-muted);">
+                            Arrastre o seleccione el logotipo oficial del negocio para renderizarlo dinámicamente en la barra lateral y en los reportes PDF. (Formatos: PNG, JPG, JPEG. Máx: 2 MB).
+                        </div>
+                        <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap;">
+                            <!-- Zona Drop/Preview -->
+                            <div id="logo-dropzone" style="flex:1; min-width:240px; height:160px; border:2px dashed var(--border-color); border-radius:var(--radius-md); display:flex; flex-direction:column; justify-content:center; align-items:center; cursor:pointer; position:relative; overflow:hidden; transition: all 0.2s ease;">
+                                <input type="file" id="logo-file-input" accept="image/png, image/jpeg, image/jpg" style="display:none;" />
+                                <div id="logo-dropzone-prompt" style="text-align:center; padding:16px; pointer-events:none;">
+                                    <i data-lucide="image" style="width:36px; height:36px; color:var(--text-muted); margin-bottom:8px;"></i>
+                                    <div style="font-size:0.85rem; font-weight:600;">Arrastre su imagen aquí</div>
+                                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">o haga clic para buscar en el disco</div>
+                                </div>
+                                <img id="logo-preview-img" style="display:none; width:100%; height:100%; object-fit:contain; padding:8px; pointer-events:none;" />
+                            </div>
+                            
+                            <!-- Información y Acciones -->
+                            <div style="display:flex; flex-direction:column; gap:14px; flex:1; min-width:200px;">
+                                <div style="font-size:0.85rem; background-color:rgba(255,255,255,0.02); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                                    <div style="font-weight:700; margin-bottom:4px;">Estado del Logotipo:</div>
+                                    <span id="logo-status-text" style="font-family:monospace; font-weight:bold; color:var(--text-muted);">Sin logotipo</span>
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                    <button class="btn btn-secondary" type="button" id="btn-remover-logo" style="display:none; padding:8px 14px; font-size:0.8rem; border-color:rgba(239,68,68,0.2); color:var(--color-danger);">
+                                        <i data-lucide="trash-2" style="width:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i> Eliminar
+                                    </button>
+                                    <button class="btn btn-primary" type="button" id="btn-subir-logo" style="display:none; padding:8px 14px; font-size:0.8rem;">
+                                        <i data-lucide="upload" style="width:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i> Subir Logotipo
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="config-direccion">Dirección Fiscal</label>
-                        <input type="text" class="form-input" id="config-direccion">
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label" for="config-telefono">Teléfono</label>
-                            <input type="text" class="form-input" id="config-telefono">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="config-email">Email Corporativo</label>
-                            <input type="email" class="form-input" id="config-email">
-                        </div>
-                    </div>
-
-                    <div class="form-row" style="border-top:1px dashed var(--border-color); padding-top:16px; margin-top:12px;">
-                        <div class="form-group">
-                            <label class="form-label" for="config-moneda">Moneda por Defecto</label>
-                            <select class="form-select" id="config-moneda" required>
-                                <option value="PEN">Soles (PEN)</option>
-                                <option value="USD">Dólares (USD)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="config-tc-diario" style="color:var(--color-warning); font-weight:bold;">Tipo de Cambio del Día (Soles/Dólar)</label>
-                            <input type="number" step="0.0001" min="0.01" class="form-input" id="config-tc-diario" required>
-                        </div>
-                    </div>
-
-                    <div style="margin-top:20px; display:flex; justify-content:flex-end;">
-                        <button class="btn btn-primary" type="button" id="btn-guardar-config">
-                            <i data-lucide="save"></i> Guardar Cambios
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
-
+            
             <!-- Panel Lateral de Auditoría o Historial -->
             <div class="card" style="height: 100%;">
                 <div class="card-title">Historial de Cambio</div>
@@ -115,6 +155,164 @@ async function renderConfiguracion(container) {
     document.getElementById('btn-guardar-config').addEventListener('click', guardarConfiguracion);
     document.getElementById('btn-nuevo-usuario').addEventListener('click', abrirModalNuevoUsuario);
 
+    // Eventos del Logotipo
+    const dropzone = document.getElementById('logo-dropzone');
+    const fileInput = document.getElementById('logo-file-input');
+    const previewImg = document.getElementById('logo-preview-img');
+    const promptDiv = document.getElementById('logo-dropzone-prompt');
+    const btnSubir = document.getElementById('btn-subir-logo');
+    const btnRemover = document.getElementById('btn-remover-logo');
+    const statusText = document.getElementById('logo-status-text');
+
+    if (dropzone) {
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = 'var(--color-primary)';
+            dropzone.style.backgroundColor = 'rgba(99, 102, 241, 0.05)';
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.style.borderColor = 'var(--border-color)';
+            dropzone.style.backgroundColor = 'transparent';
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = 'var(--border-color)';
+            dropzone.style.backgroundColor = 'transparent';
+            
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleSelectedLogoFile(e.dataTransfer.files[0]);
+            }
+        });
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files.length > 0) {
+                handleSelectedLogoFile(fileInput.files[0]);
+            }
+        });
+    }
+
+    function handleSelectedLogoFile(file) {
+        const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+            mostrarToast("Solo se permiten imágenes en formato PNG, JPG o JPEG.", "danger");
+            fileInput.value = '';
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            mostrarToast("El archivo excede el tamaño máximo permitido de 2 MB.", "danger");
+            fileInput.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (previewImg) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+            }
+            if (promptDiv) promptDiv.style.display = 'none';
+            if (btnSubir) btnSubir.style.display = 'inline-flex';
+            if (statusText) {
+                statusText.textContent = `${file.name} (Listo para subir)`;
+                statusText.style.color = 'var(--color-warning)';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    if (btnSubir) {
+        btnSubir.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            try {
+                if (statusText) {
+                    statusText.textContent = "Subiendo...";
+                    statusText.style.color = 'var(--color-warning)';
+                }
+                const res = await fetch(`${API_URL}/api/config/logo`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.exito) {
+                    mostrarToast(data.mensaje, "success");
+                    if (btnSubir) btnSubir.style.display = 'none';
+                    if (btnRemover) btnRemover.style.display = 'inline-flex';
+                    if (statusText) {
+                        statusText.textContent = "Guardado en servidor";
+                        statusText.style.color = 'var(--color-success)';
+                    }
+                    configActual.logo_path = data.logo_path;
+                    if (typeof cargarLogoEmpresa === 'function') {
+                        await cargarLogoEmpresa();
+                    }
+                } else {
+                    mostrarToast(data.mensaje, "danger");
+                    if (statusText) {
+                        statusText.textContent = "Error al subir";
+                        statusText.style.color = 'var(--color-danger)';
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                mostrarToast("Error de conexión al subir el logotipo.", "danger");
+                if (statusText) {
+                    statusText.textContent = "Error de conexión";
+                    statusText.style.color = 'var(--color-danger)';
+                }
+            }
+        });
+    }
+
+    if (btnRemover) {
+        btnRemover.addEventListener('click', async () => {
+            if (!confirm("¿Está seguro de que desea eliminar el logotipo de la empresa?")) return;
+
+            try {
+                const res = await fetch(`${API_URL}/api/config/logo`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (data.exito) {
+                    mostrarToast(data.mensaje, "success");
+                    if (fileInput) fileInput.value = '';
+                    if (previewImg) {
+                        previewImg.src = '';
+                        previewImg.style.display = 'none';
+                    }
+                    if (promptDiv) promptDiv.style.display = 'block';
+                    if (btnSubir) btnSubir.style.display = 'none';
+                    if (btnRemover) btnRemover.style.display = 'none';
+                    if (statusText) {
+                        statusText.textContent = "Sin logotipo";
+                        statusText.style.color = 'var(--text-muted)';
+                    }
+                    configActual.logo_path = null;
+                    if (typeof cargarLogoEmpresa === 'function') {
+                        await cargarLogoEmpresa();
+                    }
+                } else {
+                    mostrarToast(data.mensaje, "danger");
+                }
+            } catch (err) {
+                console.error(err);
+                mostrarToast("Error de conexión al eliminar el logotipo.", "danger");
+            }
+        });
+    }
+
     lucide.createIcons();
 }
 
@@ -131,6 +329,33 @@ async function cargarConfiguracion() {
             document.getElementById('config-email').value = configActual.empresa_email || '';
             document.getElementById('config-moneda').value = configActual.moneda_defecto || 'PEN';
             document.getElementById('config-tc-diario').value = configActual.tipo_cambio_actual || 3.7500;
+            
+            // Actualizar interfaz del logo
+            const previewImg = document.getElementById('logo-preview-img');
+            const promptDiv = document.getElementById('logo-dropzone-prompt');
+            const btnRemover = document.getElementById('btn-remover-logo');
+            const btnSubir = document.getElementById('btn-subir-logo');
+            const statusText = document.getElementById('logo-status-text');
+            
+            if (previewImg && promptDiv && statusText) {
+                if (configActual.logo_path) {
+                    previewImg.src = `${API_URL}${configActual.logo_path}`;
+                    previewImg.style.display = 'block';
+                    promptDiv.style.display = 'none';
+                    if (btnRemover) btnRemover.style.display = 'inline-flex';
+                    if (btnSubir) btnSubir.style.display = 'none';
+                    statusText.textContent = "Guardado en servidor";
+                    statusText.style.color = 'var(--color-success)';
+                } else {
+                    previewImg.src = '';
+                    previewImg.style.display = 'none';
+                    promptDiv.style.display = 'block';
+                    if (btnRemover) btnRemover.style.display = 'none';
+                    if (btnSubir) btnSubir.style.display = 'none';
+                    statusText.textContent = "Sin logotipo";
+                    statusText.style.color = 'var(--text-muted)';
+                }
+            }
         }
 
         // Historial de TC

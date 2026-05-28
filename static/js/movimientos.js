@@ -333,9 +333,12 @@ async function exportarKardexPDF() {
 
         printContainer.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #6366f1; padding-bottom:12px; margin-bottom:16px;">
-                <div>
-                    <h1 style="font-size:16px; font-weight:800; color:#6366f1; margin:0;">${config.empresa_nombre}</h1>
-                    <p style="margin:2px 0 0; color:#4b5563; font-size:9px;">Reporte de Control de Inventario - Kárdex de Movimientos</p>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    ${config.logo_path ? `<img src="${API_URL}${config.logo_path}" style="height:40px; width:40px; object-fit:contain; border-radius:4px;" alt="Logo" />` : ''}
+                    <div>
+                        <h1 style="font-size:16px; font-weight:800; color:#6366f1; margin:0;">${config.empresa_nombre}</h1>
+                        <p style="margin:2px 0 0; color:#4b5563; font-size:9px;">Reporte de Control de Inventario - Kárdex de Movimientos</p>
+                    </div>
                 </div>
                 <div style="text-align:right;">
                     <p style="margin:0; font-weight:700; font-size:10px;">Fecha: ${new Date().toLocaleDateString()}</p>

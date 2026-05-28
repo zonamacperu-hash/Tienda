@@ -875,11 +875,14 @@ async function imprimirComprobantePDF(ventaId) {
 
         printContainer.innerHTML = `
             <div style="display:flex; justify-content:between; align-items:flex-start; border-bottom:2px solid #e5e7eb; padding-bottom:16px; margin-bottom:20px;">
-                <div style="flex:1;">
-                    <h1 style="font-size:20px; font-weight:800; color:#4f46e5; margin:0 0 8px;">${config.empresa_nombre}</h1>
-                    <p style="margin:0; color:#4b5563;">RUC: ${config.empresa_ruc}</p>
-                    <p style="margin:2px 0 0; color:#4b5563;">Dirección: ${config.empresa_direccion || 'No especificada'}</p>
-                    <p style="margin:2px 0 0; color:#4b5563;">Teléfono: ${config.empresa_telefono || ''}</p>
+                <div style="display:flex; gap:16px; align-items:center; flex:1;">
+                    ${config.logo_path ? `<img src="${API_URL}${config.logo_path}" style="height:60px; width:60px; object-fit:contain; border-radius:4px;" alt="Logo" />` : ''}
+                    <div>
+                        <h1 style="font-size:20px; font-weight:800; color:#4f46e5; margin:0 0 4px;">${config.empresa_nombre}</h1>
+                        <p style="margin:0; color:#4b5563; font-size:11px;">RUC: ${config.empresa_ruc}</p>
+                        <p style="margin:2px 0 0; color:#4b5563; font-size:11px;">Dirección: ${config.empresa_direccion || 'No especificada'}</p>
+                        <p style="margin:2px 0 0; color:#4b5563; font-size:11px;">Teléfono: ${config.empresa_telefono || ''}</p>
+                    </div>
                 </div>
                 <div style="border:2px solid #4f46e5; padding:16px; border-radius:8px; text-align:center; min-width:180px; background-color:#faf5ff;">
                     <h2 style="font-size:14px; margin:0 0 4px; font-weight:800; color:#4f46e5; text-transform:uppercase;">${venta.tipo_comprobante} Electronica</h2>

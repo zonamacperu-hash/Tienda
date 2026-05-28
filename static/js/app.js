@@ -52,7 +52,8 @@ function inicializarAutenticacion() {
             const res = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                credentials: 'include'
             });
             const data = await res.json();
             
@@ -77,7 +78,15 @@ function inicializarAutenticacion() {
     });
 
     // Evento del botón de cerrar sesión
-    document.getElementById('logout-button').addEventListener('click', () => {
+    document.getElementById('logout-button').addEventListener('click', async () => {
+        try {
+            await fetch(`${API_URL}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (err) {
+            console.error("Error al cerrar sesión en el servidor:", err);
+        }
         localStorage.removeItem('erp_session');
         usuarioActivo = null;
         loginScreen.style.display = 'flex';

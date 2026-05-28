@@ -550,7 +550,8 @@ async function procesarAbastecimiento() {
         const res = await fetch(`${API_URL}/api/compras`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            credentials: 'include'
         });
         const data = await res.json();
 
@@ -575,7 +576,9 @@ async function cargarHistorialCompras() {
     if (!tbody) return;
 
     try {
-        const res = await fetch(`${API_URL}/api/compras`);
+        const res = await fetch(`${API_URL}/api/compras`, {
+            credentials: 'include'
+        });
         const compras = await res.json();
 
         if (compras.length === 0) {
@@ -618,7 +621,10 @@ async function anularCompra(compraId) {
     if (!confirm("¿Está seguro de ANULAR esta compra? Esta acción descontará el stock ingresado y eliminará los números de serie correspondientes si no han sido vendidos.")) return;
 
     try {
-        const res = await fetch(`${API_URL}/api/compras/${compraId}/anular`, { method: 'PUT' });
+        const res = await fetch(`${API_URL}/api/compras/${compraId}/anular`, {
+            method: 'PUT',
+            credentials: 'include'
+        });
         const data = await res.json();
 
         if (data.exito) {

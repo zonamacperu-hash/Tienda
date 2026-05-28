@@ -705,7 +705,8 @@ async function procesarCobroPOS() {
         const res = await fetch(`${API_URL}/api/ventas`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            credentials: 'include'
         });
         const data = await res.json();
 
@@ -763,7 +764,9 @@ async function cargarHistorialVentas() {
     if (!tbody) return;
 
     try {
-        const res = await fetch(`${API_URL}/api/ventas`);
+        const res = await fetch(`${API_URL}/api/ventas`, {
+            credentials: 'include'
+        });
         const ventas = await res.json();
 
         if (ventas.length === 0) {
@@ -811,7 +814,10 @@ async function anularVenta(ventaId) {
     if (!confirm("¿Está seguro de ANULAR esta venta? Esta acción devolverá las series físicas a 'Disponible' e incrementará el stock correspondiente.")) return;
 
     try {
-        const res = await fetch(`${API_URL}/api/ventas/${ventaId}/anular`, { method: 'PUT' });
+        const res = await fetch(`${API_URL}/api/ventas/${ventaId}/anular`, {
+            method: 'PUT',
+            credentials: 'include'
+        });
         const data = await res.json();
 
         if (data.exito) {
@@ -840,7 +846,9 @@ async function imprimirComprobantePDF(ventaId) {
         const resConfig = await fetch(`${API_URL}/api/config`);
         const config = await resConfig.json();
 
-        const resVentas = await fetch(`${API_URL}/api/ventas`);
+        const resVentas = await fetch(`${API_URL}/api/ventas`, {
+            credentials: 'include'
+        });
         const ventas = await resVentas.json();
         const venta = ventas.find(v => v.id === ventaId);
 

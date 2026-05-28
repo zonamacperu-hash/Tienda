@@ -243,7 +243,8 @@ async function renderConfiguracion(container) {
                 }
                 const res = await fetch(`${API_URL}/api/config/logo`, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'include'
                 });
                 const data = await res.json();
                 if (data.exito) {
@@ -282,7 +283,8 @@ async function renderConfiguracion(container) {
 
             try {
                 const res = await fetch(`${API_URL}/api/config/logo`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
                 const data = await res.json();
                 if (data.exito) {

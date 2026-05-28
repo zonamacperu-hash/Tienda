@@ -1,10 +1,11 @@
 import os
 import sys
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from werkzeug.security import check_password_hash
 from PIL import Image
 import io
+from functools import wraps
 
 # Asegurar que el directorio raíz esté en el path para importar módulos internos
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -13,7 +14,27 @@ from server.database import query_db, execute_db, transaction
 from server.sales_processor import procesar_venta_transaccional
 
 app = Flask(__name__, static_folder='../static', static_url_path='')
-CORS(app)  # Habilitar CORS para desarrollo local
+# Habilitar CORS con credenciales para desarrollo local / cross-origin
+CORS(app, supports_credentials=True)
+
+# Clave secreta para firmar las cookies de sesión
+app.secret_key = os.environ.get('SECRET_KEY', 'default_pos_secret_key_1293847_eg')
+
+# Configurar cookies de sesión
+app.config.update(
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=False, # HTTP local
+    SESSION_COOKIE_HTTPONLY=True
+)
+
+# Decorador de seguridad: Requiere sesión activa
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'usuario_id' not in session:
+            return jsonify({"exito": False, "mensaje": "No autorizado. Inicie sesión en el sistema."}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
 # ==============================================================================
 # ENRUTAMIENTO ESTÁTICO (SPA)
@@ -37,6 +58,10 @@ def login():
     user = query_db("SELECT * FROM usuarios WHERE username = ? AND activo = 1", [username], one=True)
     
     if user and check_password_hash(user['password_hash'], password):
+        session['usuario_id'] = user['id']
+        session['rol'] = user['rol']
+        session['nombre'] = user['nombre']
+        session['username'] = user['username']
         return jsonify({
             "exito": True,
             "usuario": {
@@ -49,6 +74,11 @@ def login():
         })
         
     return jsonify({"exito": False, "mensaje": "Usuario o contraseña incorrectos"}), 401
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({"exito": True, "mensaje": "Sesión cerrada correctamente."})
 
 # ==============================================================================
 # MÓDULO: CONFIGURACIÓN Y TIPO DE CAMBIO
@@ -121,6 +151,7 @@ def config_sistema():
 # MÓDULO: CONFIGURACIÓN - LOGOTIPO
 # ==============================================================================
 @app.route('/api/config/logo', methods=['POST', 'DELETE'])
+@login_required
 def gestionar_logo():
     if request.method == 'POST':
         if 'logo' not in request.files:
@@ -331,6 +362,7 @@ def get_movimientos_inventario():
     tipo_movimiento = request.args.get('tipo_movimiento', 'Todos')
     numero_serie = request.args.get('numero_serie')
     cliente_filtro = request.args.get('cliente_filtro')
+    usuario_id_filtro = request.args.get('usuario_id')
 
     params_compras = []
     params_ventas = []
@@ -354,6 +386,9 @@ def get_movimientos_inventario():
     if numero_serie:
         where_compras.append("ps.numero_serie LIKE ?")
         params_compras.append(f"%{numero_serie}%")
+    if usuario_id_filtro and usuario_id_filtro != '' and usuario_id_filtro != 'Todos':
+        where_compras.append("c.usuario_id = ?")
+        params_compras.append(int(usuario_id_filtro))
 
     # 2. Filtros de Ventas (Salidas)
     where_ventas = ["v.estado = 'Completada'"]
@@ -382,6 +417,9 @@ def get_movimientos_inventario():
     if numero_serie:
         where_ventas.append("ps.numero_serie LIKE ?")
         params_ventas.append(f"%{numero_serie}%")
+    if usuario_id_filtro and usuario_id_filtro != '' and usuario_id_filtro != 'Todos':
+        where_ventas.append("v.usuario_id = ?")
+        params_ventas.append(int(usuario_id_filtro))
 
     # 3. Construir Queries
     query_compras = f"""
@@ -398,13 +436,15 @@ def get_movimientos_inventario():
             a.nombre_razon_social AS actor_nombre,
             c.moneda AS moneda,
             cd.precio_unitario AS precio_unitario,
-            CASE WHEN p.maneja_series = 1 THEN ps.numero_serie ELSE NULL END AS numero_serie
+            CASE WHEN p.maneja_series = 1 THEN ps.numero_serie ELSE NULL END AS numero_serie,
+            u.nombre AS usuario_nombre
         FROM compra_detalles cd
         JOIN compras c ON cd.compra_id = c.id
         JOIN productos p ON cd.producto_id = p.id
         LEFT JOIN categorias cat ON p.categoria_id = cat.id
         LEFT JOIN actores a ON c.proveedor_id = a.id
         LEFT JOIN producto_series ps ON p.maneja_series = 1 AND ps.compra_id = c.id AND ps.producto_id = p.id
+        LEFT JOIN usuarios u ON c.usuario_id = u.id
         WHERE {" AND ".join(where_compras)}
     """
 
@@ -422,13 +462,15 @@ def get_movimientos_inventario():
             COALESCE(act.nombre_razon_social, v.cliente_nombre_manual) AS actor_nombre,
             v.moneda AS moneda,
             vd.precio_unitario AS precio_unitario,
-            CASE WHEN p.maneja_series = 1 THEN ps.numero_serie ELSE NULL END AS numero_serie
+            CASE WHEN p.maneja_series = 1 THEN ps.numero_serie ELSE NULL END AS numero_serie,
+            u.nombre AS usuario_nombre
         FROM venta_detalles vd
         JOIN ventas v ON vd.venta_id = v.id
         JOIN productos p ON vd.producto_id = p.id
         LEFT JOIN categorias cat ON p.categoria_id = cat.id
         LEFT JOIN actores act ON v.cliente_id = act.id
         LEFT JOIN producto_series ps ON p.maneja_series = 1 AND ps.venta_id = v.id AND ps.producto_id = p.id
+        LEFT JOIN usuarios u ON v.usuario_id = u.id
         WHERE {" AND ".join(where_ventas)}
     """
 
@@ -552,6 +594,7 @@ def actor_estado_cuenta(id):
 # MÓDULO: COMPRAS (Abastecimiento Multi-ítem)
 # ==============================================================================
 @app.route('/api/compras', methods=['GET', 'POST'])
+@login_required
 def compras():
     if request.method == 'GET':
         query = """
@@ -566,6 +609,7 @@ def compras():
         
     elif request.method == 'POST':
         data = request.json
+        usuario_id = session['usuario_id']
         try:
             with transaction() as cursor:
                 proveedor_id = data.get('proveedor_id')
@@ -614,7 +658,7 @@ def compras():
                     """,
                     (
                         data.get('proveedor_id'),
-                        data.get('usuario_id'),
+                        usuario_id,
                         data.get('tipo_comprobante'),
                         data.get('serie_comprobante'),
                         data.get('correlativo_comprobante'),
@@ -713,6 +757,7 @@ def anular_compra(id):
 # MÓDULO: VENTAS (Punto de Venta / POS)
 # ==============================================================================
 @app.route('/api/ventas', methods=['GET', 'POST'])
+@login_required
 def ventas():
     if request.method == 'GET':
         query = """
@@ -729,6 +774,7 @@ def ventas():
         
     elif request.method == 'POST':
         data = request.json
+        data['usuario_id'] = session['usuario_id']
         try:
             # Procesar la venta usando el procesador transaccional lógico
             resultado = procesar_venta_transaccional(data)
@@ -973,7 +1019,7 @@ def create_usuario():
         
     try:
         from werkzeug.security import generate_password_hash
-        pwd_hash = generate_password_hash(password)
+        pwd_hash = generate_password_hash(password, method='pbkdf2:sha256')
         user_id = execute_db(
             "INSERT INTO usuarios (nombre, username, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, 1)",
             [nombre, username, email, pwd_hash, rol]

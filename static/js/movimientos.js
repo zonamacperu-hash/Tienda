@@ -30,6 +30,14 @@ async function renderMovimientos(container) {
                         </select>
                     </div>
 
+                    <!-- Usuario / Operador -->
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" style="font-size:0.75rem;">Operador / Usuario</label>
+                        <select class="form-select" id="filtro-mov-usuario" style="padding:8px 12px; font-size:0.85rem;">
+                            <option value="">Todos los Usuarios</option>
+                        </select>
+                    </div>
+
                     <!-- Producto Autocomplete -->
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label" style="font-size:0.75rem;">Producto</label>
@@ -102,12 +110,13 @@ async function renderMovimientos(container) {
                             <th style="text-align:right;">Cant.</th>
                             <th>Documento Asociado</th>
                             <th>Actor Involucrado</th>
+                            <th>Usuario / Operador</th>
                             <th style="text-align:right;">P. Unitario</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-kardex-body">
                         <tr>
-                            <td colspan="8" style="text-align:center; padding:32px; color:var(--text-muted);">
+                            <td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">
                                 Cargando movimientos del kárdex...
                             </td>
                         </tr>
@@ -133,6 +142,15 @@ async function inicializarFiltrosKardex() {
         if (catSelect) {
             catSelect.innerHTML = '<option value="">Todas las Categorías</option>' +
                 cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+        }
+
+        // Cargar Usuarios
+        const resUsers = await fetch(`${API_URL}/api/usuarios`);
+        const users = await resUsers.json();
+        const userSelect = document.getElementById('filtro-mov-usuario');
+        if (userSelect) {
+            userSelect.innerHTML = '<option value="">Todos los Usuarios</option>' +
+                users.map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
         }
 
         // Cargar Productos para Autocomplete
@@ -163,7 +181,7 @@ async function filtrarMovimientosKardex() {
     const tbody = document.getElementById('tabla-kardex-body');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:32px; color:var(--text-muted);">Filtrando movimientos...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">Filtrando movimientos...</td></tr>';
 
     const fInicio = document.getElementById('filtro-mov-fecha-inicio').value;
     const fFin = document.getElementById('filtro-mov-fecha-fin').value;
@@ -172,6 +190,7 @@ async function filtrarMovimientosKardex() {
     const clienteInput = document.getElementById('filtro-mov-cliente-input').value.trim();
     const tipo = document.getElementById('filtro-mov-tipo').value;
     const serie = document.getElementById('filtro-mov-serie').value.trim();
+    const usuarioId = document.getElementById('filtro-mov-usuario').value;
 
     // Obtener producto ID a partir del input autocomplete
     let prodId = '';
@@ -205,6 +224,7 @@ async function filtrarMovimientosKardex() {
     if (clienteFiltroVal) queryParams.append('cliente_filtro', clienteFiltroVal);
     if (tipo) queryParams.append('tipo_movimiento', tipo);
     if (serie) queryParams.append('numero_serie', serie);
+    if (usuarioId) queryParams.append('usuario_id', usuarioId);
 
     try {
         const res = await fetch(`${API_URL}/api/inventario/movimientos?${queryParams.toString()}`);
@@ -215,7 +235,7 @@ async function filtrarMovimientosKardex() {
         renderTablaKardex(globalMovimientos);
     } catch (err) {
         console.error(err);
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:32px; color:var(--color-danger);">Error de conexión al servidor local.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:32px; color:var(--color-danger);">Error de conexión al servidor local.</td></tr>';
     }
 }
 
@@ -224,7 +244,7 @@ function renderTablaKardex(movimientos) {
     if (!tbody) return;
 
     if (movimientos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:32px; color:var(--text-muted);">No se encontraron movimientos registrados con los filtros aplicados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">No se encontraron movimientos registrados con los filtros aplicados.</td></tr>';
         return;
     }
 
@@ -253,6 +273,7 @@ function renderTablaKardex(movimientos) {
                 <td style="text-align:right; font-weight:700;">${m.cantidad} U.</td>
                 <td style="font-family:monospace; font-weight:600;">${m.documento}</td>
                 <td style="font-weight:600; font-size:0.85rem;">${m.actor_nombre || 'Invitado/Genérico'}</td>
+                <td style="font-weight:600; font-size:0.85rem; color:var(--text-muted);">${m.usuario_nombre || 'Sistema'}</td>
                 <td style="text-align:right; font-weight:700; color: var(--text-main);">${formatCurrency(m.precio_unitario, m.moneda)}</td>
             </tr>
         `;
@@ -269,6 +290,7 @@ function limpiarFiltrosMovimientos() {
     document.getElementById('filtro-mov-cliente-input').value = '';
     document.getElementById('filtro-mov-tipo').value = 'Todos';
     document.getElementById('filtro-mov-serie').value = '';
+    document.getElementById('filtro-mov-usuario').value = '';
     filtrarMovimientosKardex();
 }
 
@@ -356,6 +378,7 @@ async function exportarKardexPDF() {
                         <th style="padding:6px; font-weight:600; text-align:right; width:40px;">Cant.</th>
                         <th style="padding:6px; font-weight:600;">Documento</th>
                         <th style="padding:6px; font-weight:600;">Actor</th>
+                        <th style="padding:6px; font-weight:600;">Usuario / Operador</th>
                         <th style="padding:6px; font-weight:600; text-align:right; width:70px;">P. Unitario</th>
                     </tr>
                 </thead>
@@ -379,6 +402,7 @@ async function exportarKardexPDF() {
                                 <td style="padding:6px; text-align:right; font-weight:700;">${m.cantidad}</td>
                                 <td style="padding:6px; font-family:monospace;">${m.documento}</td>
                                 <td style="padding:6px;">${m.actor_nombre || 'Público General'}</td>
+                                <td style="padding:6px; color:#4b5563;">${m.usuario_nombre || 'Sistema'}</td>
                                 <td style="padding:6px; text-align:right; font-weight:700;">${formatCurrency(m.precio_unitario, m.moneda)}</td>
                             </tr>
                         `;

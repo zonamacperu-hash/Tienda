@@ -241,7 +241,9 @@ CREATE INDEX IF NOT EXISTS idx_producto_series_numero ON producto_series(numero_
 CREATE INDEX IF NOT EXISTS idx_producto_series_estado ON producto_series(producto_id, estado);
 CREATE INDEX IF NOT EXISTS idx_actores_documento ON actores(documento_identidad);
 CREATE INDEX IF NOT EXISTS idx_compras_proveedor ON compras(proveedor_id);
+CREATE INDEX IF NOT EXISTS idx_compras_usuario ON compras(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_ventas_cliente ON ventas(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_ventas_usuario ON ventas(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_compra_detalles_compra ON compra_detalles(compra_id);
 CREATE INDEX IF NOT EXISTS idx_venta_detalles_venta ON venta_detalles(venta_id);
 CREATE INDEX IF NOT EXISTS idx_venta_pagos_venta ON venta_pagos(venta_id);

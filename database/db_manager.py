@@ -57,10 +57,19 @@ def init_db():
         ))
         
         # 3.2. Insertar usuarios semilla (Admin, Vendedor, Almacenero)
+        admin_user = os.environ.get('ERP_ADMIN_USER', 'admin')
+        admin_pass = os.environ.get('ERP_ADMIN_PASS', 'admin123')
+        
+        vendedor_user = os.environ.get('ERP_VENDEDOR_USER', 'vendedor')
+        vendedor_pass = os.environ.get('ERP_VENDEDOR_PASS', 'vendedor123')
+        
+        almacen_user = os.environ.get('ERP_ALMACEN_USER', 'almacen')
+        almacen_pass = os.environ.get('ERP_ALMACEN_PASS', 'almacen123')
+
         usuarios_semilla = [
-            ("Administrador ERP", "admin", "admin@tecnoperu.com", generate_password_hash("admin123", method='pbkdf2:sha256'), "Administrador"),
-            ("Vendedor POS", "vendedor", "vendedor@tecnoperu.com", generate_password_hash("vendedor123", method='pbkdf2:sha256'), "Vendedor"),
-            ("Almacenero ERP", "almacen", "almacen@tecnoperu.com", generate_password_hash("almacen123", method='pbkdf2:sha256'), "Almacenero")
+            ("Administrador ERP", admin_user, "admin@tecnoperu.com", generate_password_hash(admin_pass, method='pbkdf2:sha256'), "Administrador"),
+            ("Vendedor POS", vendedor_user, "vendedor@tecnoperu.com", generate_password_hash(vendedor_pass, method='pbkdf2:sha256'), "Vendedor"),
+            ("Almacenero ERP", almacen_user, "almacen@tecnoperu.com", generate_password_hash(almacen_pass, method='pbkdf2:sha256'), "Almacenero")
         ]
         cursor.executemany("""
             INSERT INTO usuarios (nombre, username, email, password_hash, rol, activo)

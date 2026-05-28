@@ -2,8 +2,10 @@
    LÓGICA PRINCIPAL, ENRUTADOR Y COMPONENTES GLOBALES DE LA SPA
    ============================================================================== */
 
-// URL Base de la API local (Se adapta automáticamente si se abre como archivo local file://)
-const API_URL = window.location.protocol === 'file:' ? 'http://127.0.0.1:5001' : ''; 
+// URL Base de la API local (Se adapta para Netlify o ejecución local)
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.protocol !== 'file:'
+    ? '' 
+    : 'http://127.0.0.1:5001'; 
 
 // Estado Global de la SPA
 let usuarioActivo = null;

@@ -25,10 +25,36 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ==============================================================================
    CONTROL DE AUTENTICACIÓN
    ============================================================================== */
+// MODO SIN CREDENCIALES: Cambiar a false para reactivar el login con credenciales
+const MODO_SIN_CREDENCIALES = true;
+
 function inicializarAutenticacion() {
-    const sesion = localStorage.getItem('erp_session');
     const loginScreen = document.getElementById('login-screen');
     const appScreen = document.getElementById('app-screen');
+    
+    if (MODO_SIN_CREDENCIALES) {
+        // En modo sin credenciales, forzamos la sesión como Administrador ERP
+        usuarioActivo = {
+            id: 1,
+            nombre: "Administrador ERP",
+            username: "admin",
+            email: "admin@tecnoperu.com",
+            rol: "Administrador"
+        };
+        localStorage.setItem('erp_session', JSON.stringify(usuarioActivo));
+        loginScreen.style.display = 'none';
+        appScreen.style.display = 'flex';
+        actualizarInfoUsuarioHeader();
+        irAVista('dashboard');
+
+        // Deshabilitar el botón de logout o mostrar un mensaje indicando que está deshabilitado
+        document.getElementById('logout-button').addEventListener('click', () => {
+            mostrarToast('Cierre de sesión desactivado en modo sin credenciales.', 'info');
+        });
+        return;
+    }
+
+    const sesion = localStorage.getItem('erp_session');
     
     if (sesion) {
         usuarioActivo = JSON.parse(sesion);

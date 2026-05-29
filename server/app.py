@@ -27,6 +27,18 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True
 )
 
+# MODO SIN CREDENCIALES: Cambiar a False para reactivar el login con credenciales
+MODO_SIN_CREDENCIALES = True
+
+@app.before_request
+def auto_login_sin_credenciales():
+    if MODO_SIN_CREDENCIALES:
+        if 'usuario_id' not in session:
+            session['usuario_id'] = 1
+            session['rol'] = 'Administrador'
+            session['nombre'] = 'Administrador ERP'
+            session['username'] = 'admin'
+
 # Decorador de seguridad: Requiere sesión activa
 def login_required(f):
     @wraps(f)

@@ -1,11 +1,8 @@
 import os
 import sys
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.security import check_password_hash
-from PIL import Image
-import io
-from functools import wraps
 
 # Asegurar que el directorio raíz esté en el path para importar módulos internos
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -14,39 +11,7 @@ from server.database import query_db, execute_db, transaction
 from server.sales_processor import procesar_venta_transaccional
 
 app = Flask(__name__, static_folder='../static', static_url_path='')
-# Habilitar CORS con credenciales para desarrollo local / cross-origin
-CORS(app, supports_credentials=True)
-
-# Clave secreta para firmar las cookies de sesión
-app.secret_key = os.environ.get('SECRET_KEY', 'default_pos_secret_key_1293847_eg')
-
-# Configurar cookies de sesión
-app.config.update(
-    SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_SECURE=False, # HTTP local
-    SESSION_COOKIE_HTTPONLY=True
-)
-
-# MODO SIN CREDENCIALES: Cambiar a False para reactivar el login con credenciales
-MODO_SIN_CREDENCIALES = True
-
-@app.before_request
-def auto_login_sin_credenciales():
-    if MODO_SIN_CREDENCIALES:
-        if 'usuario_id' not in session:
-            session['usuario_id'] = 1
-            session['rol'] = 'Administrador'
-            session['nombre'] = 'Administrador ERP'
-            session['username'] = 'admin'
-
-# Decorador de seguridad: Requiere sesión activa
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'usuario_id' not in session:
-            return jsonify({"exito": False, "mensaje": "No autorizado. Inicie sesión en el sistema."}), 401
-        return f(*args, **kwargs)
-    return decorated_function
+CORS(app)  # Habilitar CORS para desarrollo local
 
 # ==============================================================================
 # ENRUTAMIENTO ESTÁTICO (SPA)
@@ -70,10 +35,6 @@ def login():
     user = query_db("SELECT * FROM usuarios WHERE username = ? AND activo = 1", [username], one=True)
     
     if user and check_password_hash(user['password_hash'], password):
-        session['usuario_id'] = user['id']
-        session['rol'] = user['rol']
-        session['nombre'] = user['nombre']
-        session['username'] = user['username']
         return jsonify({
             "exito": True,
             "usuario": {
@@ -86,11 +47,6 @@ def login():
         })
         
     return jsonify({"exito": False, "mensaje": "Usuario o contraseña incorrectos"}), 401
-
-@app.route('/api/auth/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({"exito": True, "mensaje": "Sesión cerrada correctamente."})
 
 # ==============================================================================
 # MÓDULO: CONFIGURACIÓN Y TIPO DE CAMBIO
@@ -158,78 +114,6 @@ def config_sistema():
             """, (nuevo_tc, usuario_id))
             
         return jsonify({"exito": True, "mensaje": "Configuración actualizada con éxito."})
-
-# ==============================================================================
-# MÓDULO: CONFIGURACIÓN - LOGOTIPO
-# ==============================================================================
-@app.route('/api/config/logo', methods=['POST', 'DELETE'])
-@login_required
-def gestionar_logo():
-    if request.method == 'POST':
-        if 'logo' not in request.files:
-            return jsonify({"exito": False, "mensaje": "No se subió ningún archivo de logotipo."}), 400
-        
-        file = request.files['logo']
-        if file.filename == '':
-            return jsonify({"exito": False, "mensaje": "El nombre de archivo está vacío."}), 400
-        
-        # Validar tipo de archivo
-        extension = os.path.splitext(file.filename)[1].lower()
-        if extension not in ['.png', '.jpg', '.jpeg']:
-            return jsonify({"exito": False, "mensaje": "Formato no permitido. Solo se aceptan imágenes PNG, JPG y JPEG."}), 400
-        
-        # Validar tamaño del archivo (máximo 2 MB)
-        file.seek(0, os.SEEK_END)
-        file_length = file.tell()
-        if file_length > 2 * 1024 * 1024:
-            return jsonify({"exito": False, "mensaje": "El archivo excede el tamaño máximo permitido de 2 MB."}), 400
-        
-        # Regresar cursor al principio
-        file.seek(0)
-        
-        try:
-            # Procesar con Pillow
-            img = Image.open(file.stream)
-            # Asegurar canal alfa para transparencia
-            img = img.convert("RGBA")
-            # Redimensionar usando thumbnail para mantener aspecto y no deformar
-            img.thumbnail((300, 300), Image.Resampling.LANCZOS)
-            
-            # Asegurar directorio de almacenamiento
-            storage_dir = os.path.abspath(os.path.join(app.static_folder, 'storage'))
-            os.makedirs(storage_dir, exist_ok=True)
-            
-            save_path = os.path.join(storage_dir, 'logo_empresa.png')
-            
-            # Guardar como PNG transparente
-            img.save(save_path, "PNG")
-            
-            # Registrar ruta en la base de datos
-            logo_rel_path = '/storage/logo_empresa.png'
-            execute_db("UPDATE configuracion_sistema SET logo_path = ? WHERE id = (SELECT id FROM configuracion_sistema LIMIT 1)", [logo_rel_path])
-            
-            return jsonify({
-                "exito": True,
-                "logo_path": logo_rel_path,
-                "mensaje": "Logotipo subido y optimizado con éxito."
-            })
-        except Exception as e:
-            return jsonify({"exito": False, "mensaje": f"Error al procesar la imagen: {str(e)}"}), 500
-            
-    elif request.method == 'DELETE':
-        try:
-            # Obtener logo anterior
-            config = query_db("SELECT logo_path FROM configuracion_sistema LIMIT 1", one=True)
-            if config and config['logo_path']:
-                logo_file_path = os.path.abspath(os.path.join(app.static_folder, config['logo_path'].lstrip('/')))
-                if os.path.exists(logo_file_path):
-                    os.remove(logo_file_path)
-            
-            # Limpiar en base de datos
-            execute_db("UPDATE configuracion_sistema SET logo_path = NULL WHERE id = (SELECT id FROM configuracion_sistema LIMIT 1)")
-            return jsonify({"exito": True, "mensaje": "Logotipo eliminado con éxito."})
-        except Exception as e:
-            return jsonify({"exito": False, "mensaje": f"Error al eliminar el logotipo: {str(e)}"}), 500
 
 # ==============================================================================
 # MÓDULO: CATEGORÍAS
@@ -374,7 +258,6 @@ def get_movimientos_inventario():
     tipo_movimiento = request.args.get('tipo_movimiento', 'Todos')
     numero_serie = request.args.get('numero_serie')
     cliente_filtro = request.args.get('cliente_filtro')
-    usuario_id_filtro = request.args.get('usuario_id')
 
     params_compras = []
     params_ventas = []
@@ -398,9 +281,6 @@ def get_movimientos_inventario():
     if numero_serie:
         where_compras.append("ps.numero_serie LIKE ?")
         params_compras.append(f"%{numero_serie}%")
-    if usuario_id_filtro and usuario_id_filtro != '' and usuario_id_filtro != 'Todos':
-        where_compras.append("c.usuario_id = ?")
-        params_compras.append(int(usuario_id_filtro))
 
     # 2. Filtros de Ventas (Salidas)
     where_ventas = ["v.estado = 'Completada'"]
@@ -429,9 +309,6 @@ def get_movimientos_inventario():
     if numero_serie:
         where_ventas.append("ps.numero_serie LIKE ?")
         params_ventas.append(f"%{numero_serie}%")
-    if usuario_id_filtro and usuario_id_filtro != '' and usuario_id_filtro != 'Todos':
-        where_ventas.append("v.usuario_id = ?")
-        params_ventas.append(int(usuario_id_filtro))
 
     # 3. Construir Queries
     query_compras = f"""
@@ -448,15 +325,13 @@ def get_movimientos_inventario():
             a.nombre_razon_social AS actor_nombre,
             c.moneda AS moneda,
             cd.precio_unitario AS precio_unitario,
-            CASE WHEN p.maneja_series = 1 THEN ps.numero_serie ELSE NULL END AS numero_serie,
-            u.nombre AS usuario_nombre
+            CASE WHEN p.maneja_series = 1 THEN ps.numero_serie ELSE NULL END AS numero_serie
         FROM compra_detalles cd
         JOIN compras c ON cd.compra_id = c.id
         JOIN productos p ON cd.producto_id = p.id
         LEFT JOIN categorias cat ON p.categoria_id = cat.id
         LEFT JOIN actores a ON c.proveedor_id = a.id
         LEFT JOIN producto_series ps ON p.maneja_series = 1 AND ps.compra_id = c.id AND ps.producto_id = p.id
-        LEFT JOIN usuarios u ON c.usuario_id = u.id
         WHERE {" AND ".join(where_compras)}
     """
 
@@ -474,15 +349,13 @@ def get_movimientos_inventario():
             COALESCE(act.nombre_razon_social, v.cliente_nombre_manual) AS actor_nombre,
             v.moneda AS moneda,
             vd.precio_unitario AS precio_unitario,
-            CASE WHEN p.maneja_series = 1 THEN ps.numero_serie ELSE NULL END AS numero_serie,
-            u.nombre AS usuario_nombre
+            CASE WHEN p.maneja_series = 1 THEN ps.numero_serie ELSE NULL END AS numero_serie
         FROM venta_detalles vd
         JOIN ventas v ON vd.venta_id = v.id
         JOIN productos p ON vd.producto_id = p.id
         LEFT JOIN categorias cat ON p.categoria_id = cat.id
         LEFT JOIN actores act ON v.cliente_id = act.id
         LEFT JOIN producto_series ps ON p.maneja_series = 1 AND ps.venta_id = v.id AND ps.producto_id = p.id
-        LEFT JOIN usuarios u ON v.usuario_id = u.id
         WHERE {" AND ".join(where_ventas)}
     """
 
@@ -606,7 +479,6 @@ def actor_estado_cuenta(id):
 # MÓDULO: COMPRAS (Abastecimiento Multi-ítem)
 # ==============================================================================
 @app.route('/api/compras', methods=['GET', 'POST'])
-@login_required
 def compras():
     if request.method == 'GET':
         query = """
@@ -621,7 +493,6 @@ def compras():
         
     elif request.method == 'POST':
         data = request.json
-        usuario_id = session['usuario_id']
         try:
             with transaction() as cursor:
                 proveedor_id = data.get('proveedor_id')
@@ -670,7 +541,7 @@ def compras():
                     """,
                     (
                         data.get('proveedor_id'),
-                        usuario_id,
+                        data.get('usuario_id'),
                         data.get('tipo_comprobante'),
                         data.get('serie_comprobante'),
                         data.get('correlativo_comprobante'),
@@ -769,7 +640,6 @@ def anular_compra(id):
 # MÓDULO: VENTAS (Punto de Venta / POS)
 # ==============================================================================
 @app.route('/api/ventas', methods=['GET', 'POST'])
-@login_required
 def ventas():
     if request.method == 'GET':
         query = """
@@ -786,7 +656,6 @@ def ventas():
         
     elif request.method == 'POST':
         data = request.json
-        data['usuario_id'] = session['usuario_id']
         try:
             # Procesar la venta usando el procesador transaccional lógico
             resultado = procesar_venta_transaccional(data)
@@ -1031,7 +900,7 @@ def create_usuario():
         
     try:
         from werkzeug.security import generate_password_hash
-        pwd_hash = generate_password_hash(password, method='pbkdf2:sha256')
+        pwd_hash = generate_password_hash(password)
         user_id = execute_db(
             "INSERT INTO usuarios (nombre, username, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, 1)",
             [nombre, username, email, pwd_hash, rol]
@@ -1061,9 +930,259 @@ def get_tc_historial():
     """)
     return jsonify(hist)
 
+
+# ==============================================================================
+# MÓDULO: SERVICIO TÉCNICO Y REPARACIONES
+# ==============================================================================
+
+@app.route('/api/soporte/ordenes', methods=['GET', 'POST'])
+def soporte_ordenes():
+    if request.method == 'GET':
+        query = """
+            SELECT o.*, 
+                   COALESCE(a.nombre_razon_social, o.cliente_nombre_manual) as cliente_nombre,
+                   a.documento_identidad as cliente_documento,
+                   a.telefono as cliente_telefono,
+                   ps.numero_serie as producto_serie_codigo
+            FROM ordenes_servicio o
+            LEFT JOIN actores a ON o.cliente_id = a.id
+            LEFT JOIN producto_series ps ON o.producto_serie_id = ps.id
+            ORDER BY o.fecha_ingreso DESC
+        """
+        ordenes = query_db(query)
+        return jsonify(ordenes)
+        
+    elif request.method == 'POST':
+        data = request.json
+        cliente_id = data.get('cliente_id')
+        cliente_nombre_manual = (data.get('cliente_nombre_manual') or '').strip()
+        producto_serie_id = data.get('producto_serie_id')
+        equipo_marca_modelo = (data.get('equipo_marca_modelo') or '').strip()
+        numero_serie_externo = (data.get('numero_serie_externo') or '').strip()
+        problema_reportado = (data.get('problema_reportado') or '').strip()
+        costo_servicio = float(data.get('costo_servicio', 0.00))
+        
+        if not equipo_marca_modelo or not problema_reportado:
+            return jsonify({"exito": False, "mensaje": "Faltan datos obligatorios (Equipo y Falla Reportada)."}), 400
+            
+        if not cliente_id and not cliente_nombre_manual:
+            return jsonify({"exito": False, "mensaje": "Debe registrar un cliente o escribir un nombre para comprador/cliente manual."}), 400
+            
+        try:
+            orden_id = execute_db(
+                """
+                INSERT INTO ordenes_servicio (
+                    cliente_id, producto_serie_id, equipo_marca_modelo, numero_serie_externo,
+                    problema_reportado, estado, costo_servicio, total_pagar, cliente_nombre_manual
+                ) VALUES (?, ?, ?, ?, ?, 'Recibido', ?, ?, ?)
+                """,
+                (
+                    cliente_id if cliente_id else None,
+                    producto_serie_id if producto_serie_id else None,
+                    equipo_marca_modelo,
+                    numero_serie_externo if numero_serie_externo else None,
+                    problema_reportado,
+                    costo_servicio,
+                    costo_servicio,
+                    cliente_nombre_manual if not cliente_id else None
+                )
+            )
+            return jsonify({"exito": True, "id": orden_id, "mensaje": "Orden de servicio creada con éxito."})
+        except Exception as e:
+            return jsonify({"exito": False, "mensaje": f"Error: {str(e)}"}), 400
+
+@app.route('/api/soporte/ordenes/<int:id>', methods=['GET', 'PUT'])
+def soporte_orden_detalle(id):
+    if request.method == 'GET':
+        query_orden = """
+            SELECT o.*, 
+                   COALESCE(a.nombre_razon_social, o.cliente_nombre_manual) as cliente_nombre,
+                   a.documento_identidad as cliente_documento,
+                   a.telefono as cliente_telefono,
+                   a.direccion as cliente_direccion,
+                   a.email as cliente_email,
+                   ps.numero_serie as producto_serie_codigo,
+                   ps.venta_id as serie_venta_id
+            FROM ordenes_servicio o
+            LEFT JOIN actores a ON o.cliente_id = a.id
+            LEFT JOIN producto_series ps ON o.producto_serie_id = ps.id
+            WHERE o.id = ?
+        """
+        orden = query_db(query_orden, [id], one=True)
+        if not orden:
+            return jsonify({"exito": False, "mensaje": "Orden de servicio no encontrada."}), 404
+            
+        repuestos = query_db(
+            """
+            SELECT r.*, p.nombre as producto_nombre
+            FROM orden_servicio_repuestos r
+            JOIN productos p ON r.producto_id = p.id
+            WHERE r.orden_servicio_id = ?
+            """,
+            [id]
+        )
+        
+        return jsonify({
+            "exito": True,
+            "orden": orden,
+            "repuestos": repuestos
+        })
+        
+    elif request.method == 'PUT':
+        data = request.json
+        diagnostico = data.get('diagnostico_tecnico')
+        estado = data.get('estado')
+        costo_servicio = float(data.get('costo_servicio', 0.00))
+        garantia_servicio_meses = int(data.get('garantia_servicio_meses', 0))
+        
+        if estado not in ('Recibido', 'En Diagnostico', 'Reparado', 'No Reparable', 'Entregado'):
+            return jsonify({"exito": False, "mensaje": "Estado inválido."}), 400
+            
+        try:
+            with transaction() as cursor:
+                # Obtener costo de los repuestos cargados
+                total_repuestos = cursor.execute(
+                    "SELECT SUM(cantidad * precio_aplicado) FROM orden_servicio_repuestos WHERE orden_servicio_id = ?",
+                    (id,)
+                ).fetchone()[0] or 0.00
+                
+                nuevo_total = total_repuestos + costo_servicio
+                
+                cursor.execute(
+                    """
+                    UPDATE ordenes_servicio
+                    SET diagnostico_tecnico = ?, estado = ?, costo_servicio = ?, 
+                        garantia_servicio_meses = ?, total_pagar = ?
+                    WHERE id = ?
+                    """,
+                    (diagnostico, estado, costo_servicio, garantia_servicio_meses, nuevo_total, id)
+                )
+            return jsonify({"exito": True, "mensaje": "Orden de servicio actualizada con éxito."})
+        except Exception as e:
+            return jsonify({"exito": False, "mensaje": f"Error: {str(e)}"}), 400
+
+@app.route('/api/soporte/ordenes/<int:id>/repuestos', methods=['POST'])
+def soporte_agregar_repuesto(id):
+    data = request.json
+    producto_id = data.get('producto_id')
+    cantidad = int(data.get('cantidad', 1))
+    precio_aplicado = float(data.get('precio_aplicado', 0.00))
+    
+    if not producto_id or cantidad <= 0:
+        return jsonify({"exito": False, "mensaje": "Faltan datos válidos del repuesto."}), 400
+        
+    try:
+        with transaction() as cursor:
+            # 1. Validar producto y stock
+            producto = cursor.execute(
+                "SELECT stock_actual, nombre FROM productos WHERE id = ?", 
+                (producto_id,)
+            ).fetchone()
+            if not producto:
+                raise ValueError("Producto repuesto no encontrado.")
+            
+            stock_actual = producto[0]
+            if stock_actual < cantidad:
+                raise ValueError(f"Stock insuficiente para '{producto[1]}'. Disponible: {stock_actual}, Solicitado: {cantidad}")
+                
+            # 2. Insertar en la tabla de repuestos
+            cursor.execute(
+                """
+                INSERT INTO orden_servicio_repuestos (orden_servicio_id, producto_id, cantidad, precio_aplicado)
+                VALUES (?, ?, ?, ?)
+                """,
+                (id, producto_id, cantidad, precio_aplicado)
+            )
+            # El trigger `trg_soporte_repuesto_insert` descontará el stock automáticamente
+            
+            # 3. Recalcular total_pagar en ordenes_servicio
+            orden = cursor.execute("SELECT costo_servicio FROM ordenes_servicio WHERE id = ?", (id,)).fetchone()
+            costo_servicio = orden[0] if orden else 0.00
+            
+            total_repuestos = cursor.execute(
+                "SELECT SUM(cantidad * precio_aplicado) FROM orden_servicio_repuestos WHERE orden_servicio_id = ?",
+                (id,)
+            ).fetchone()[0] or 0.00
+            
+            nuevo_total = total_repuestos + costo_servicio
+            cursor.execute("UPDATE ordenes_servicio SET total_pagar = ? WHERE id = ?", (nuevo_total, id))
+            
+        return jsonify({"exito": True, "mensaje": "Repuesto agregado e inventario descontado con éxito."})
+    except Exception as e:
+        return jsonify({"exito": False, "mensaje": f"Error: {str(e)}"}), 400
+
+@app.route('/api/soporte/ordenes/<int:id>/repuestos/<int:repuesto_id>', methods=['DELETE'])
+def soporte_eliminar_repuesto(id, repuesto_id):
+    try:
+        with transaction() as cursor:
+            # 1. Eliminar repuesto
+            cursor.execute(
+                "DELETE FROM orden_servicio_repuestos WHERE id = ? AND orden_servicio_id = ?", 
+                (repuesto_id, id)
+            )
+            # El trigger `trg_soporte_repuesto_delete` repondrá el stock automáticamente
+            
+            # 2. Recalcular total_pagar en ordenes_servicio
+            orden = cursor.execute("SELECT costo_servicio FROM ordenes_servicio WHERE id = ?", (id,)).fetchone()
+            costo_servicio = orden[0] if orden else 0.00
+            
+            total_repuestos = cursor.execute(
+                "SELECT SUM(cantidad * precio_aplicado) FROM orden_servicio_repuestos WHERE orden_servicio_id = ?",
+                (id,)
+            ).fetchone()[0] or 0.00
+            
+            nuevo_total = total_repuestos + costo_servicio
+            cursor.execute("UPDATE ordenes_servicio SET total_pagar = ? WHERE id = ?", (nuevo_total, id))
+            
+        return jsonify({"exito": True, "mensaje": "Repuesto eliminado e inventario reabastecido."})
+    except Exception as e:
+        return jsonify({"exito": False, "mensaje": f"Error: {str(e)}"}), 400
+
+@app.route('/api/soporte/ordenes/<int:id>/entregar', methods=['PUT'])
+def soporte_entregar_equipo(id):
+    data = request.json
+    metodo_pago = data.get('metodo_pago')
+    garantia_servicio_meses = int(data.get('garantia_servicio_meses', 0))
+    diagnostico_tecnico = (data.get('diagnostico_tecnico') or '').strip()
+    costo_servicio = float(data.get('costo_servicio', 0.00))
+    
+    if not metodo_pago:
+        return jsonify({"exito": False, "mensaje": "Debe especificar un método de pago."}), 400
+        
+    try:
+        with transaction() as cursor:
+            # 1. Obtener total a pagar
+            total_repuestos = cursor.execute(
+                "SELECT SUM(cantidad * precio_aplicado) FROM orden_servicio_repuestos WHERE orden_servicio_id = ?",
+                (id,)
+            ).fetchone()[0] or 0.00
+            
+            nuevo_total = total_repuestos + costo_servicio
+            
+            # 2. Actualizar estado de la orden a Entregado y completar campos
+            cursor.execute(
+                """
+                UPDATE ordenes_servicio
+                SET estado = 'Entregado',
+                    fecha_entrega = datetime('now', 'localtime'),
+                    metodo_pago = ?,
+                    garantia_servicio_meses = ?,
+                    diagnostico_tecnico = ?,
+                    costo_servicio = ?,
+                    total_pagar = ?
+                WHERE id = ?
+                """,
+                (metodo_pago, garantia_servicio_meses, diagnostico_tecnico, costo_servicio, nuevo_total, id)
+            )
+            
+        return jsonify({"exito": True, "mensaje": "Equipo entregado con éxito."})
+    except Exception as e:
+        return jsonify({"exito": False, "mensaje": f"Error: {str(e)}"}), 400
+
+
 # ==============================================================================
 # INICIALIZACIÓN DEL SERVIDOR
 # ==============================================================================
 if __name__ == '__main__':
-    # Habilitar modo desarrollo y levantar en el puerto 5001
-    app.run(host='127.0.0.1', port=5001, debug=True)
+    # Habilitar modo desarrollo y levantar en el puerto 5000
+    app.run(host='127.0.0.1', port=5000, debug=True)

@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS configuracion_sistema (
     empresa_email TEXT,
     moneda_defecto TEXT DEFAULT 'PEN', -- 'PEN' o 'USD'
     tipo_cambio_actual REAL NOT NULL DEFAULT 3.7500, -- Tipo de cambio del día (Soles por 1 Dólar)
-    logo_path TEXT, -- Ruta del logotipo de la empresa
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -241,9 +240,7 @@ CREATE INDEX IF NOT EXISTS idx_producto_series_numero ON producto_series(numero_
 CREATE INDEX IF NOT EXISTS idx_producto_series_estado ON producto_series(producto_id, estado);
 CREATE INDEX IF NOT EXISTS idx_actores_documento ON actores(documento_identidad);
 CREATE INDEX IF NOT EXISTS idx_compras_proveedor ON compras(proveedor_id);
-CREATE INDEX IF NOT EXISTS idx_compras_usuario ON compras(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_ventas_cliente ON ventas(cliente_id);
-CREATE INDEX IF NOT EXISTS idx_ventas_usuario ON ventas(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_compra_detalles_compra ON compra_detalles(compra_id);
 CREATE INDEX IF NOT EXISTS idx_venta_detalles_venta ON venta_detalles(venta_id);
 CREATE INDEX IF NOT EXISTS idx_venta_pagos_venta ON venta_pagos(venta_id);
@@ -308,3 +305,74 @@ BEGIN
     DELETE FROM producto_series
     WHERE compra_id = NEW.id;
 END;
+
+-- ==============================================================================
+-- MODULO DE SERVICIO TECNICO Y REPARACIONES
+-- ==============================================================================
+
+-- 15. TABLA: ordenes_servicio (Tabla Principal)
+CREATE TABLE IF NOT EXISTS ordenes_servicio (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id INTEGER REFERENCES actores(id) ON DELETE RESTRICT,
+    producto_serie_id INTEGER REFERENCES producto_series(id) ON DELETE SET NULL,
+    equipo_marca_modelo TEXT NOT NULL,
+    numero_serie_externo TEXT,
+    problema_reportado TEXT NOT NULL,
+    diagnostico_tecnico TEXT,
+    estado TEXT NOT NULL CHECK (estado IN ('Recibido', 'En Diagnostico', 'Reparado', 'No Reparable', 'Entregado')) DEFAULT 'Recibido',
+    fecha_ingreso TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_entrega TEXT,
+    garantia_servicio_meses INTEGER DEFAULT 0,
+    costo_servicio REAL NOT NULL DEFAULT 0.00,
+    total_pagar REAL NOT NULL DEFAULT 0.00,
+    metodo_pago TEXT,
+    cliente_nombre_manual TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 16. TABLA: orden_servicio_repuestos (Tabla Detalle)
+CREATE TABLE IF NOT EXISTS orden_servicio_repuestos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    orden_servicio_id INTEGER NOT NULL REFERENCES ordenes_servicio(id) ON DELETE CASCADE,
+    producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    precio_aplicado REAL NOT NULL CHECK (precio_aplicado >= 0)
+);
+
+-- INDICES DE OPTIMIZACION
+CREATE INDEX IF NOT EXISTS idx_ordenes_servicio_cliente ON ordenes_servicio(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_ordenes_servicio_serie ON ordenes_servicio(producto_serie_id);
+CREATE INDEX IF NOT EXISTS idx_orden_servicio_repuestos_orden ON orden_servicio_repuestos(orden_servicio_id);
+CREATE INDEX IF NOT EXISTS idx_orden_servicio_repuestos_producto ON orden_servicio_repuestos(producto_id);
+
+-- TRIGGERS DE CONTROL DE INVENTARIO
+-- 1. Descontar stock al insertar repuesto en orden de servicio
+CREATE TRIGGER IF NOT EXISTS trg_soporte_repuesto_insert
+AFTER INSERT ON orden_servicio_repuestos
+BEGIN
+    UPDATE productos
+    SET stock_actual = stock_actual - NEW.cantidad
+    WHERE id = NEW.producto_id;
+END;
+
+-- 2. Devolver stock al eliminar repuesto de orden de servicio
+CREATE TRIGGER IF NOT EXISTS trg_soporte_repuesto_delete
+AFTER DELETE ON orden_servicio_repuestos
+BEGIN
+    UPDATE productos
+    SET stock_actual = stock_actual + OLD.cantidad
+    WHERE id = OLD.producto_id;
+END;
+
+-- 3. Ajustar stock al actualizar cantidad o producto de repuesto
+CREATE TRIGGER IF NOT EXISTS trg_soporte_repuesto_update
+AFTER UPDATE ON orden_servicio_repuestos
+BEGIN
+    UPDATE productos
+    SET stock_actual = stock_actual + OLD.cantidad
+    WHERE id = OLD.producto_id;
+    UPDATE productos
+    SET stock_actual = stock_actual - NEW.cantidad
+    WHERE id = NEW.producto_id;
+END;
+

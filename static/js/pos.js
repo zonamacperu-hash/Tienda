@@ -229,13 +229,14 @@ function agregarAlCarritoPOS(productoId) {
             mostrarToast("No hay más stock físico en almacén.", "warning");
             return;
         }
-    } else {
         itemCarrito = {
             producto_id: prod.id,
             nombre: prod.nombre,
             cantidad: 1,
             tipo_precio: 'Final', // Precio por defecto
+            es_precio_manual: false,
             precio_manual: prod.precio_final,
+            precio_manual_raw: '',
             precio_base: prod.precio_base,
             precio_final: prod.precio_final,
             moneda: prod.moneda || 'PEN',
@@ -272,7 +273,6 @@ function renderCarritoPOS() {
     const monedaVenta = monedaSelect ? monedaSelect.value : 'PEN';
 
     container.innerHTML = carritoPOS.map((item, index) => {
-        // Calcular precio a mostrar
         let precioOrigen = item.precio_final;
         if (item.tipo_precio === 'Base') precioOrigen = item.precio_base;
         else if (item.tipo_precio === 'Manual') precioOrigen = item.precio_manual;
@@ -289,6 +289,15 @@ function renderCarritoPOS() {
         }
 
         const subtotalTransaccion = precioTransaccion * item.cantidad;
+
+        const isManual = item.tipo_precio === 'Manual';
+        const inputBg = isManual ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255,255,255,0.02)';
+        const inputBorder = isManual ? '1px solid var(--color-primary)' : '1px solid var(--border-color)';
+        const inputColor = isManual ? 'var(--text-main)' : 'var(--text-muted)';
+        const inputCursor = isManual ? 'text' : 'not-allowed';
+        const inputVal = isManual && item.precio_manual_raw !== undefined && item.precio_manual_raw !== '' 
+            ? item.precio_manual_raw 
+            : precioTransaccion.toFixed(2);
 
         // Control de selección de series para productos trazables
         let seriesControlHtml = '';
@@ -338,10 +347,12 @@ function renderCarritoPOS() {
                     <div style="display:flex; align-items:center; gap:4px;">
                         <span class="form-label" style="font-size:0.75rem;">${monedaVenta === 'USD' ? '$' : 'S/'}</span>
                         <input type="number" step="0.01" class="form-input pos-cart-price-input" 
-                               style="padding:4px 6px; font-size:0.8rem; width:70px; height:28px; text-align:right; background:rgba(255,255,255,0.02); border:1px solid var(--border-color); color:var(--text-main);" 
-                               value="${precioTransaccion.toFixed(2)}" 
-                               ${item.tipo_precio !== 'Manual' ? 'readonly' : ''} 
-                               oninput="cambiarPrecioManualPOS(${index}, this.value)">
+                               style="padding:4px 6px; font-size:0.8rem; width:75px; height:28px; text-align:right; background:${inputBg}; border:${inputBorder}; color:${inputColor}; cursor:${inputCursor}; transition: all var(--transition-fast);" 
+                               value="${inputVal}" 
+                               ${!isManual ? 'readonly' : ''} 
+                               oninput="actualizarPrecioManualRawPOS(${index}, this.value)"
+                               onblur="finalizarPrecioManualPOS(${index}, this.value)"
+                               onkeydown="if(event.key === 'Enter') { finalizarPrecioManualPOS(${index}, this.value); event.preventDefault(); }">
                     </div>
 
                     <!-- Subtotal Ítem -->
@@ -411,14 +422,48 @@ function cambiarTipoPrecioPOS(index, tipo) {
 
     item.tipo_precio = tipo;
     if (tipo === 'Manual') {
+        item.es_precio_manual = true;
+        // Pre-cargar el precio raw con el precio de visualización en la moneda actual
+        const monedaSelect = document.getElementById('pos-moneda');
+        const monedaVenta = monedaSelect ? monedaSelect.value : 'PEN';
+        let displayPrice = item.precio_final;
+        if (item.moneda !== monedaVenta) {
+            if (monedaVenta === 'USD') displayPrice = item.precio_final / tipoCambioActual;
+            else displayPrice = item.precio_final * tipoCambioActual;
+        }
         item.precio_manual = item.precio_final;
+        item.precio_manual_raw = displayPrice.toFixed(2);
+    } else {
+        item.es_precio_manual = false;
+        item.precio_manual_raw = '';
     }
     renderCarritoPOS();
 }
 
-function cambiarPrecioManualPOS(index, precio) {
+function actualizarPrecioManualRawPOS(index, rawValue) {
     const item = carritoPOS[index];
-    let val = parseFloat(precio);
+    item.precio_manual_raw = rawValue;
+    
+    let val = parseFloat(rawValue);
+    if (isNaN(val) || val < 0) {
+        val = 0;
+    }
+    
+    const monedaSelect = document.getElementById('pos-moneda');
+    const monedaVenta = monedaSelect ? monedaSelect.value : 'PEN';
+    const subtotalTransaccion = val * item.cantidad;
+    
+    const subtotalEl = document.getElementById(`pos-item-subtotal-${index}`);
+    if (subtotalEl) {
+        subtotalEl.textContent = formatCurrency(subtotalTransaccion, monedaVenta);
+    }
+    
+    actualizarTotalesPOS();
+}
+
+function finalizarPrecioManualPOS(index, value) {
+    const item = carritoPOS[index];
+    let val = parseFloat(value);
     if (isNaN(val) || val < 0) {
         val = 0;
     }
@@ -436,15 +481,9 @@ function cambiarPrecioManualPOS(index, precio) {
     } else {
         item.precio_manual = val;
     }
-
-    const subtotalTransaccion = val * item.cantidad;
-
-    const subtotalEl = document.getElementById(`pos-item-subtotal-${index}`);
-    if (subtotalEl) {
-        subtotalEl.textContent = formatCurrency(subtotalTransaccion, monedaVenta);
-    }
-
-    actualizarTotalesPOS();
+    
+    item.precio_manual_raw = val.toFixed(2);
+    renderCarritoPOS();
 }
 
 function cambiarGarantiaPOS(index, meses) {
@@ -705,8 +744,7 @@ async function procesarCobroPOS() {
         const res = await fetch(`${API_URL}/api/ventas`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            credentials: 'include'
+            body: JSON.stringify(payload)
         });
         const data = await res.json();
 
@@ -764,9 +802,7 @@ async function cargarHistorialVentas() {
     if (!tbody) return;
 
     try {
-        const res = await fetch(`${API_URL}/api/ventas`, {
-            credentials: 'include'
-        });
+        const res = await fetch(`${API_URL}/api/ventas`);
         const ventas = await res.json();
 
         if (ventas.length === 0) {
@@ -814,10 +850,7 @@ async function anularVenta(ventaId) {
     if (!confirm("¿Está seguro de ANULAR esta venta? Esta acción devolverá las series físicas a 'Disponible' e incrementará el stock correspondiente.")) return;
 
     try {
-        const res = await fetch(`${API_URL}/api/ventas/${ventaId}/anular`, {
-            method: 'PUT',
-            credentials: 'include'
-        });
+        const res = await fetch(`${API_URL}/api/ventas/${ventaId}/anular`, { method: 'PUT' });
         const data = await res.json();
 
         if (data.exito) {
@@ -846,9 +879,7 @@ async function imprimirComprobantePDF(ventaId) {
         const resConfig = await fetch(`${API_URL}/api/config`);
         const config = await resConfig.json();
 
-        const resVentas = await fetch(`${API_URL}/api/ventas`, {
-            credentials: 'include'
-        });
+        const resVentas = await fetch(`${API_URL}/api/ventas`);
         const ventas = await resVentas.json();
         const venta = ventas.find(v => v.id === ventaId);
 
@@ -883,14 +914,11 @@ async function imprimirComprobantePDF(ventaId) {
 
         printContainer.innerHTML = `
             <div style="display:flex; justify-content:between; align-items:flex-start; border-bottom:2px solid #e5e7eb; padding-bottom:16px; margin-bottom:20px;">
-                <div style="display:flex; gap:16px; align-items:center; flex:1;">
-                    ${config.logo_path ? `<img src="${API_URL}${config.logo_path}" style="height:60px; width:60px; object-fit:contain; border-radius:4px;" alt="Logo" />` : ''}
-                    <div>
-                        <h1 style="font-size:20px; font-weight:800; color:#4f46e5; margin:0 0 4px;">${config.empresa_nombre}</h1>
-                        <p style="margin:0; color:#4b5563; font-size:11px;">RUC: ${config.empresa_ruc}</p>
-                        <p style="margin:2px 0 0; color:#4b5563; font-size:11px;">Dirección: ${config.empresa_direccion || 'No especificada'}</p>
-                        <p style="margin:2px 0 0; color:#4b5563; font-size:11px;">Teléfono: ${config.empresa_telefono || ''}</p>
-                    </div>
+                <div style="flex:1;">
+                    <h1 style="font-size:20px; font-weight:800; color:#4f46e5; margin:0 0 8px;">${config.empresa_nombre}</h1>
+                    <p style="margin:0; color:#4b5563;">RUC: ${config.empresa_ruc}</p>
+                    <p style="margin:2px 0 0; color:#4b5563;">Dirección: ${config.empresa_direccion || 'No especificada'}</p>
+                    <p style="margin:2px 0 0; color:#4b5563;">Teléfono: ${config.empresa_telefono || ''}</p>
                 </div>
                 <div style="border:2px solid #4f46e5; padding:16px; border-radius:8px; text-align:center; min-width:180px; background-color:#faf5ff;">
                     <h2 style="font-size:14px; margin:0 0 4px; font-weight:800; color:#4f46e5; text-transform:uppercase;">${venta.tipo_comprobante} Electronica</h2>

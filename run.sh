@@ -20,27 +20,27 @@ fi
 
 # 2. Activar entorno virtual
 echo "[2/4] Activando entorno virtual..."
-source venv/bin/activate
+source venv/bin/activate || true
 
 # 3. Instalar dependencias
 echo "[3/4] Instalando dependencias de Python..."
-python3 -m pip install --upgrade pip
-python3 -m pip install -r server/requirements.txt
+venv/bin/pip install --upgrade pip
+venv/bin/pip install -r server/requirements.txt
 
 # 4. Inicializar base de datos SQLite y poblar semillas
 echo "[4/4] Inicializando base de datos SQLite y semillas..."
-python3 database/db_manager.py
+venv/bin/python3 database/db_manager.py
 
 echo "======================================================================"
 echo "¡SISTEMA LISTO!"
-echo "Levantando servidor local en http://127.0.0.1:5001"
+echo "Levantando servidor local en http://127.0.0.1:5000"
 echo "Para detener el servidor, presione Ctrl+C"
 echo "======================================================================"
 
-# Abrir el navegador Google Chrome (compatible con macOS)
+# Abrir el navegador por defecto (compatible con macOS)
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    sleep 1 && open -a "Google Chrome" "http://127.0.0.1:5001" &
+    sleep 1 && open -a "Google Chrome" "http://127.0.0.1:5000" &
 fi
 
 # 5. Ejecutar la aplicación
-python3 server/app.py
+venv/bin/python3 server/app.py

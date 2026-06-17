@@ -842,11 +842,6 @@ class TestERPPOSLogic(unittest.TestCase):
         """Valida que la creación de compras mediante API exija RUC de proveedor para Facturas y calcule IGV condicionalmente."""
         from server.app import app
         client = app.test_client()
-        with client.session_transaction() as sess:
-            sess['usuario_id'] = 1
-            sess['rol'] = 'Administrador'
-            sess['nombre'] = 'Admin Test'
-            sess['username'] = 'admin'
         
         # 1. Crear proveedores para prueba
         # Proveedor con RUC válido (20444444444)

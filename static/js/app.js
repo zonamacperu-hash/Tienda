@@ -2,10 +2,8 @@
    LÓGICA PRINCIPAL, ENRUTADOR Y COMPONENTES GLOBALES DE LA SPA
    ============================================================================== */
 
-// URL Base de la API local (Se adapta para Netlify o ejecución local)
-const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.protocol !== 'file:'
-    ? '' 
-    : 'http://127.0.0.1:5001'; 
+// URL Base de la API local (Se adapta automáticamente si se abre como archivo local file://)
+const API_URL = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : ''; 
 
 // Estado Global de la SPA
 let usuarioActivo = null;
@@ -19,42 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
     inicializarAutenticacion();
     registrarEventosMenu();
     obtenerTipoCambioGlobal();
-    cargarLogoEmpresa();
 });
 
 /* ==============================================================================
    CONTROL DE AUTENTICACIÓN
    ============================================================================== */
-// MODO SIN CREDENCIALES: Cambiar a false para reactivar el login con credenciales
-const MODO_SIN_CREDENCIALES = true;
-
 function inicializarAutenticacion() {
+    const sesion = localStorage.getItem('erp_session');
     const loginScreen = document.getElementById('login-screen');
     const appScreen = document.getElementById('app-screen');
-    
-    if (MODO_SIN_CREDENCIALES) {
-        // En modo sin credenciales, forzamos la sesión como Administrador ERP
-        usuarioActivo = {
-            id: 1,
-            nombre: "Administrador ERP",
-            username: "admin",
-            email: "admin@tecnoperu.com",
-            rol: "Administrador"
-        };
-        localStorage.setItem('erp_session', JSON.stringify(usuarioActivo));
-        loginScreen.style.display = 'none';
-        appScreen.style.display = 'flex';
-        actualizarInfoUsuarioHeader();
-        irAVista('dashboard');
-
-        // Deshabilitar el botón de logout o mostrar un mensaje indicando que está deshabilitado
-        document.getElementById('logout-button').addEventListener('click', () => {
-            mostrarToast('Cierre de sesión desactivado en modo sin credenciales.', 'info');
-        });
-        return;
-    }
-
-    const sesion = localStorage.getItem('erp_session');
     
     if (sesion) {
         usuarioActivo = JSON.parse(sesion);
@@ -80,8 +51,7 @@ function inicializarAutenticacion() {
             const res = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-                credentials: 'include'
+                body: JSON.stringify({ username, password })
             });
             const data = await res.json();
             
@@ -106,15 +76,7 @@ function inicializarAutenticacion() {
     });
 
     // Evento del botón de cerrar sesión
-    document.getElementById('logout-button').addEventListener('click', async () => {
-        try {
-            await fetch(`${API_URL}/api/auth/logout`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-        } catch (err) {
-            console.error("Error al cerrar sesión en el servidor:", err);
-        }
+    document.getElementById('logout-button').addEventListener('click', () => {
         localStorage.removeItem('erp_session');
         usuarioActivo = null;
         loginScreen.style.display = 'flex';
@@ -166,6 +128,7 @@ async function irAVista(vista) {
         'compras': 'Registro de Compras (Abastecimiento)',
         'actores': 'Clientes y Proveedores',
         'cuentas': 'Cuentas Corrientes y Créditos',
+        'soporte': 'Gestión de Servicio Técnico',
         'configuracion': 'Configuración del Sistema'
     };
     headerTitle.textContent = titulos[vista] || 'Sistema ERP/POS';
@@ -197,6 +160,9 @@ async function irAVista(vista) {
             case 'configuracion':
                 await renderConfiguracion(viewContainer);
                 break;
+            case 'soporte':
+                await renderSoporte(viewContainer);
+                break;
             default:
                 viewContainer.innerHTML = '<h2>Vista no encontrada</h2>';
         }
@@ -222,32 +188,6 @@ async function obtenerTipoCambioGlobal() {
         }
     } catch (err) {
         console.error("Error al obtener tipo de cambio:", err);
-    }
-}
-
-/* ==============================================================================
-   LOGOTIPO DE LA EMPRESA GLOBAL
-   ============================================================================== */
-async function cargarLogoEmpresa() {
-    try {
-        const res = await fetch(`${API_URL}/api/config`);
-        const config = await res.json();
-        const logoDiv = document.querySelector('.sidebar-logo');
-        if (logoDiv) {
-            if (config && config.logo_path) {
-                logoDiv.innerHTML = `
-                    <img src="${API_URL}${config.logo_path}" style="height:32px; width:32px; object-fit:contain; border-radius:4px;" alt="Logo" />
-                    <div class="logo-text">ERP/POS</div>
-                `;
-            } else {
-                logoDiv.innerHTML = `
-                    <div class="logo-icon">EG</div>
-                    <div class="logo-text">ERP/POS</div>
-                `;
-            }
-        }
-    } catch (err) {
-        console.error("Error al cargar logotipo de la empresa:", err);
     }
 }
 

@@ -106,30 +106,16 @@
         ]);
 
         // Categorías
-        db.set('categorias', [
-            { id: 1, nombre: "Laptops & Computadoras", descripcion: "Equipos portátiles y de escritorio de última generación." },
-            { id: 2, nombre: "Accesorios de Tecnología", descripcion: "Teclados, mouses, monitores, adaptadores y componentes." }
-        ]);
+        db.set('categorias', []);
 
         // Productos
-        db.set('productos', [
-            { id: 1, categoria_id: 1, nombre: "Laptop ASUS Zenbook 14 OLED", descripcion: "Procesador Intel Core i7, 16GB RAM, 512GB SSD", maneja_series: 1, stock_minimo: 3, stock_actual: 3, precio_base: 3200.00, precio_final: 3950.00, moneda: "PEN" },
-            { id: 2, categoria_id: 2, nombre: "Mouse Inalámbrico Logitech M280", descripcion: "Mouse ergonómico con receptor USB de alta precisión", maneja_series: 0, stock_minimo: 5, stock_actual: 20, precio_base: 45.00, precio_final: 69.90, moneda: "PEN" }
-        ]);
+        db.set('productos', []);
 
         // Actores (Clientes y Proveedores)
-        db.set('actores', [
-            { id: 1, tipo: "Cliente", nombre_razon_social: "Cliente General POS", tipo_documento: "DNI", documento_identidad: "00000000", telefono: "000000000", email: "cliente_general@gmail.com", direccion: "Lima, Perú" },
-            { id: 2, tipo: "Cliente", nombre_razon_social: "Inversiones Rímac S.A.C.", tipo_documento: "RUC", documento_identidad: "20509876543", telefono: "+51 912 345 678", email: "compras@rimac.com", direccion: "San Isidro, Lima" },
-            { id: 3, tipo: "Proveedor", nombre_razon_social: "Mayorista Tecnológico del Perú S.A.", tipo_documento: "RUC", documento_identidad: "20108765432", telefono: "+51 988 777 666", email: "ventas@mayoristatec.com.pe", direccion: "Miraflores, Lima" }
-        ]);
+        db.set('actores', []);
 
         // Números de serie físicos disponibles
-        db.set('producto_series', [
-            { id: 1, producto_id: 1, numero_serie: "SN-ASUS-98765123", estado: "Disponible", compra_id: null, venta_id: null, detalles_individuales: "" },
-            { id: 2, producto_id: 1, numero_serie: "SN-ASUS-98765124", estado: "Disponible", compra_id: null, venta_id: null, detalles_individuales: "" },
-            { id: 3, producto_id: 1, numero_serie: "SN-ASUS-98765125", estado: "Disponible", compra_id: null, venta_id: null, detalles_individuales: "" }
-        ]);
+        db.set('producto_series', []);
 
         // Tablas vacías de compras, ventas, detalles, abonos
         db.set('compras', []);

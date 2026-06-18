@@ -94,56 +94,8 @@ def init_db():
             VALUES (date('now'), 3.7500, 1)
         """)
 
-        # 3.5. Insertar categorías iniciales
-        categorias = [
-            ("Laptops & Computadoras", "Equipos portátiles y de escritorio de última generación."),
-            ("Accesorios de Tecnología", "Teclados, mouses, monitores, adaptadores y componentes.")
-        ]
-        cursor.executemany("""
-            INSERT INTO categorias (nombre, descripcion)
-            VALUES (?, ?)
-        """, categorias)
-
-        # 3.6. Insertar productos de prueba
-        # Producto 1: Maneja series (Laptop Asus)
-        # Producto 2: No maneja series (Mouse Inalámbrico Logitech)
-        productos = [
-            (1, "Laptop ASUS Zenbook 14 OLED", "Procesador Intel Core i7, 16GB RAM, 512GB SSD", 1, 3, 0, 3200.00, 3950.00),
-            (2, "Mouse Inalámbrico Logitech M280", "Mouse ergonómico con receptor USB de alta precisión", 0, 5, 20, 45.00, 69.90)
-        ]
-        cursor.executemany("""
-            INSERT INTO productos (categoria_id, nombre, descripcion, maneja_series, stock_minimo, stock_actual, precio_base, precio_final)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, productos)
-
-        # 3.7. Insertar actores iniciales (Clientes y Proveedores)
-        actores = [
-            ("Cliente", "Cliente General POS", "DNI", "00000000", "000000000", "cliente_general@gmail.com", "Lima, Perú"),
-            ("Cliente", "Inversiones Rímac S.A.C.", "RUC", "20509876543", "+51 912 345 678", "compras@rimac.com", "San Isidro, Lima"),
-            ("Proveedor", "Mayorista Tecnológico del Perú S.A.", "RUC", "20108765432", "+51 988 777 666", "ventas@mayoristatec.com.pe", "Miraflores, Lima")
-        ]
-        cursor.executemany("""
-            INSERT INTO actores (tipo, nombre_razon_social, tipo_documento, documento_identidad, telefono, email, direccion)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, actores)
-
-        # 3.8. Registrar stock de series de prueba para la Laptop Asus (id=1)
-        # Ingresadas por una compra inicial simulada o de forma directa
-        series = [
-            (1, "SN-ASUS-98765123", "Disponible", None, None),
-            (1, "SN-ASUS-98765124", "Disponible", None, None),
-            (1, "SN-ASUS-98765125", "Disponible", None, None)
-        ]
-        cursor.executemany("""
-            INSERT INTO producto_series (producto_id, numero_serie, estado, compra_id, venta_id)
-            VALUES (?, ?, ?, ?, ?)
-        """, series)
-        
-        # Como ingresamos 3 series físicas, actualizamos el stock del producto 1 a 3
-        cursor.execute("UPDATE productos SET stock_actual = 3 WHERE id = 1")
-
         conn.commit()
-        print("Datos semilla inicializados con éxito.")
+        print("Datos semilla inicializados con éxito (base de datos limpia).")
     else:
         print("La base de datos ya contiene registros. Saltando semillas.")
         

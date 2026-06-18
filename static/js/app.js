@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inicializarAutenticacion();
     registrarEventosMenu();
     obtenerTipoCambioGlobal();
+    cargarLogoEmpresa();
 });
 
 /* ==============================================================================
@@ -188,6 +189,32 @@ async function obtenerTipoCambioGlobal() {
         }
     } catch (err) {
         console.error("Error al obtener tipo de cambio:", err);
+    }
+}
+
+/* ==============================================================================
+   CARGA DE LOGOTIPO DE LA EMPRESA
+   ============================================================================== */
+async function cargarLogoEmpresa() {
+    try {
+        const res = await fetch(`${API_URL}/api/config`);
+        const config = await res.json();
+        const logoIcon = document.getElementById('sidebar-logo-icon');
+        if (logoIcon) {
+            if (config && config.logo_path) {
+                logoIcon.innerHTML = `<img src="${API_URL}${config.logo_path}" style="width: 100%; height: 100%; object-fit: contain; border-radius: var(--radius-md);" alt="Logo" />`;
+                logoIcon.style.padding = '2px';
+                logoIcon.style.background = 'none';
+                logoIcon.style.boxShadow = 'none';
+            } else {
+                logoIcon.innerHTML = 'EG';
+                logoIcon.style.padding = '';
+                logoIcon.style.background = '';
+                logoIcon.style.boxShadow = '';
+            }
+        }
+    } catch (err) {
+        console.error("Error al cargar logotipo de la empresa:", err);
     }
 }
 

@@ -216,6 +216,18 @@
             return jsonResponse({ exito: true, mensaje: "Sesión cerrada correctamente." });
         }
 
+        if (path.endsWith('/api/config/reset') && method === 'POST') {
+            const keys = Object.keys(localStorage);
+            keys.forEach(k => {
+                if (k.startsWith('db_') && k !== 'db_usuarios' && k !== 'db_configuracion' && k !== 'db_secuencias_comprobante') {
+                    localStorage.removeItem(k);
+                }
+            });
+            // Re-ejecutar inicialización de semillas si es necesario
+            initDatabaseSeeds();
+            return jsonResponse({ exito: true, mensaje: "Base de datos simulada restablecida con éxito (sistema limpio)." });
+        }
+
         // --- CONFIGURACIÓN ---
         if (path.endsWith('/api/config')) {
             if (method === 'GET') {

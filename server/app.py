@@ -115,6 +115,29 @@ def config_sistema():
             
         return jsonify({"exito": True, "mensaje": "Configuración actualizada con éxito."})
 
+@app.route('/api/config/reset', methods=['POST'])
+def reset_database():
+    try:
+        with transaction() as cursor:
+            # Desactivar temporalmente llaves foráneas para poder limpiar en cualquier orden
+            cursor.execute("PRAGMA foreign_keys = OFF;")
+            
+            tablas_a_limpiar = [
+                'compra_detalles', 'compras', 'venta_detalles', 'venta_pagos', 'ventas',
+                'producto_series', 'cuentas_por_cobrar', 'cuentas_por_pagar',
+                'orden_servicio_repuestos', 'ordenes_servicio', 'productos', 'categorias', 'actores'
+            ]
+            
+            for tabla in tablas_a_limpiar:
+                cursor.execute(f"DELETE FROM {tabla};")
+                cursor.execute("DELETE FROM sqlite_sequence WHERE name = ?;", (tabla,))
+                
+            cursor.execute("PRAGMA foreign_keys = ON;")
+            
+        return jsonify({"exito": True, "mensaje": "Base de datos SQLite restablecida con éxito (sistema limpio)."})
+    except Exception as e:
+        return jsonify({"exito": False, "mensaje": f"Error al restablecer base de datos: {str(e)}"}), 500
+
 # ==============================================================================
 # MÓDULO: CATEGORÍAS
 # ==============================================================================

@@ -154,7 +154,7 @@ def config_logo():
             file.save(filepath)
             
             # Actualizar base de datos
-            logo_relative_path = f"/static/storage/{filename}"
+            logo_relative_path = f"/storage/{filename}"
             if config:
                 execute_db("UPDATE configuracion_sistema SET logo_path = ? WHERE id = (SELECT id FROM configuracion_sistema LIMIT 1)", (logo_relative_path,))
             else:

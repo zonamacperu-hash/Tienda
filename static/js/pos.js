@@ -164,7 +164,7 @@ function renderCatalogoProductosPOS(productos) {
                     <div class="product-pos-stock">Stock: ${stockDisponible} U.</div>
                 </div>
                 <div class="product-pos-footer">
-                    <div class="product-pos-price">${formatCurrency(p.precio_final, 'PEN')}</div>
+                    <div class="product-pos-price">${formatCurrency(p.precio_final, p.moneda || 'PEN')}</div>
                     ${badgeSeries}
                 </div>
             </div>
@@ -229,6 +229,7 @@ function agregarAlCarritoPOS(productoId) {
             mostrarToast("No hay más stock físico en almacén.", "warning");
             return;
         }
+    } else {
         itemCarrito = {
             producto_id: prod.id,
             nombre: prod.nombre,

@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS compras (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     proveedor_id INTEGER NOT NULL REFERENCES actores(id) ON DELETE RESTRICT,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
-    tipo_comprobante TEXT NOT NULL CHECK (tipo_comprobante IN ('Factura', 'Boleta', 'Guia de Remision', 'Nota de Credito')),
+    tipo_comprobante TEXT NOT NULL CHECK (tipo_comprobante IN ('Factura', 'Boleta', 'Guia de Remision', 'Nota de Credito', 'Nota de Compra')),
     serie_comprobante TEXT NOT NULL,
     correlativo_comprobante TEXT NOT NULL,
     fecha_compra TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS ventas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cliente_id INTEGER REFERENCES actores(id) ON DELETE RESTRICT, -- Nullable para Comprador Invitado
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
-    tipo_comprobante TEXT NOT NULL CHECK (tipo_comprobante IN ('Factura', 'Boleta', 'Guia de Remision', 'Ticket')),
+    tipo_comprobante TEXT NOT NULL CHECK (tipo_comprobante IN ('Factura', 'Boleta', 'Guia de Remision', 'Ticket', 'Nota de Venta')),
     serie_comprobante TEXT NOT NULL,
     correlativo_comprobante TEXT NOT NULL,
     fecha_venta TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS cuentas_por_pagar (
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS secuencias_comprobante (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tipo TEXT NOT NULL UNIQUE CHECK (tipo IN ('Factura', 'Boleta', 'Guia de Remision', 'Ticket')),
+    tipo TEXT NOT NULL UNIQUE CHECK (tipo IN ('Factura', 'Boleta', 'Guia de Remision', 'Ticket', 'Nota de Venta', 'Nota de Compra')),
     serie TEXT NOT NULL,
     correlativo_actual INTEGER NOT NULL DEFAULT 0
 );

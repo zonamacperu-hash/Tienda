@@ -27,6 +27,7 @@ async function renderCompras(container) {
                                     <option value="Factura" selected>Factura</option>
                                     <option value="Boleta">Boleta</option>
                                     <option value="Guia de Remision">Guía de Remisión</option>
+                                    <option value="Nota de Compra">Nota de Compra</option>
                                 </select>
                             </div>
                         </div>

@@ -97,7 +97,9 @@
             { id: 1, tipo: "Factura", serie: "F001", correlativo_actual: 0 },
             { id: 2, tipo: "Boleta", serie: "B001", correlativo_actual: 0 },
             { id: 3, tipo: "Guia de Remision", serie: "G001", correlativo_actual: 0 },
-            { id: 4, tipo: "Ticket", serie: "T001", correlativo_actual: 0 }
+            { id: 4, tipo: "Ticket", serie: "T001", correlativo_actual: 0 },
+            { id: 5, tipo: "Nota de Venta", serie: "NV01", correlativo_actual: 0 },
+            { id: 6, tipo: "Nota de Compra", serie: "NC01", correlativo_actual: 0 }
         ]);
 
         // Historial Tipo Cambio

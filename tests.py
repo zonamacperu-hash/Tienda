@@ -52,7 +52,9 @@ class TestERPPOSLogic(unittest.TestCase):
         """, [
             ("Factura", "F001", 0),
             ("Boleta", "B001", 0),
-            ("Ticket", "T001", 0)
+            ("Ticket", "T001", 0),
+            ("Nota de Venta", "NV01", 0),
+            ("Nota de Compra", "NC01", 0)
         ])
         
         # Usuarios (Admin y Vendedor)
@@ -838,6 +840,25 @@ class TestERPPOSLogic(unittest.TestCase):
         self.assertAlmostEqual(v_ticket['subtotal'], 100.00, places=2)
         self.assertAlmostEqual(v_ticket['igv'], 0.00, places=2)
 
+        # H. Venta de Nota de Venta exitosa -> Debe pasar, no exigir RUC ni cliente registrado, y tener IGV = 0.00 y Subtotal = Total (100.00)
+        venta_notaventa_ok = {
+            "cliente_id": None,
+            "cliente_nombre_manual": "Comprador Nota Venta",
+            "usuario_id": 2,
+            "tipo_comprobante": "Nota de Venta",
+            "moneda": "PEN",
+            "condicion_pago": "Contado",
+            "pagos": [{"metodo_pago": "Efectivo", "monto": 100.00}],
+            "items": [{"producto_id": 2, "cantidad": 1, "tipo_precio": "Final"}]
+        }
+        res_notaventa = procesar_venta_transaccional(venta_notaventa_ok)
+        self.assertTrue(res_notaventa['exito'])
+        self.assertEqual(res_notaventa['comprobante'], "NV01-00000001")
+        v_notaventa = query_db("SELECT subtotal, igv, total FROM ventas WHERE id = ?", [res_notaventa['venta_id']], one=True)
+        self.assertAlmostEqual(v_notaventa['total'], 100.00, places=2)
+        self.assertAlmostEqual(v_notaventa['subtotal'], 100.00, places=2)
+        self.assertAlmostEqual(v_notaventa['igv'], 0.00, places=2)
+
     def test_10_compras_igv_y_ruc_validacion(self):
         """Valida que la creación de compras mediante API exija RUC de proveedor para Facturas y calcule IGV condicionalmente."""
         from server.app import app
@@ -931,6 +952,35 @@ class TestERPPOSLogic(unittest.TestCase):
         self.assertAlmostEqual(db_compra_3['total'], 250.00, places=2)
         self.assertAlmostEqual(db_compra_3['subtotal'], 250.00, places=2)
         self.assertAlmostEqual(db_compra_3['igv'], 0.00, places=2)
+
+        # D. Compra de Nota de Compra a un proveedor con DNI -> Debe ser exitosa, tener IGV = 0.00 y Subtotal = Total (5 * 50 = 250 total)
+        compra_notacompra_ok = {
+            "proveedor_id": dni_id,
+            "usuario_id": 1,
+            "tipo_comprobante": "Nota de Compra",
+            "serie_comprobante": "NC01",
+            "correlativo_comprobante": "00000005",
+            "moneda": "PEN",
+            "tipo_cambio": 3.75,
+            "metodo_pago": "Contado",
+            "items": [
+                {
+                    "producto_id": 2,
+                    "cantidad": 5,
+                    "precio_unitario": 50.00
+                }
+            ]
+        }
+        res4 = client.post('/api/compras', json=compra_notacompra_ok)
+        self.assertEqual(res4.status_code, 200)
+        data4 = res4.get_json()
+        self.assertTrue(data4['exito'])
+        compra_id_4 = data4['compra_id']
+        
+        db_compra_4 = query_db("SELECT subtotal, igv, total FROM compras WHERE id = ?", [compra_id_4], one=True)
+        self.assertAlmostEqual(db_compra_4['total'], 250.00, places=2)
+        self.assertAlmostEqual(db_compra_4['subtotal'], 250.00, places=2)
+        self.assertAlmostEqual(db_compra_4['igv'], 0.00, places=2)
 
 if __name__ == '__main__':
     unittest.main()

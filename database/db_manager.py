@@ -81,7 +81,9 @@ def init_db():
             ("Factura", "F001", 0),
             ("Boleta", "B001", 0),
             ("Guia de Remision", "G001", 0),
-            ("Ticket", "T001", 0)
+            ("Ticket", "T001", 0),
+            ("Nota de Venta", "NV01", 0),
+            ("Nota de Compra", "NC01", 0)
         ]
         cursor.executemany("""
             INSERT INTO secuencias_comprobante (tipo, serie, correlativo_actual)

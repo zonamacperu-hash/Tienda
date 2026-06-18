@@ -904,116 +904,129 @@ async function imprimirComprobantePDF(ventaId) {
             }
         }
 
+        const esNotaVenta = venta.tipo_comprobante === 'Nota de Venta';
+        const esTicketOTermico = venta.tipo_comprobante === 'Ticket' || esNotaVenta;
+        
+        const tituloComprobante = esNotaVenta ? 'NOTA DE VENTA' : `${venta.tipo_comprobante} Electronica`;
+        const pieRepresentacion = esNotaVenta 
+            ? `Representación impresa de la ${venta.tipo_comprobante} local.`
+            : `Representación impresa de la ${venta.tipo_comprobante} Electrónica local.`;
+
         // Crear plantilla HTML en memoria para la impresión
         const printContainer = document.createElement('div');
-        printContainer.style.padding = '32px';
+        printContainer.style.padding = esTicketOTermico ? '12px 8px' : '32px';
         printContainer.style.backgroundColor = 'white';
         printContainer.style.color = '#1f2937';
         printContainer.style.fontFamily = "'Inter', sans-serif";
-        printContainer.style.fontSize = '12px';
+        printContainer.style.fontSize = esTicketOTermico ? '10px' : '12px';
         printContainer.style.lineHeight = '1.5';
+        if (esTicketOTermico) {
+            printContainer.style.width = '72mm';
+        }
 
         printContainer.innerHTML = `
-            <div style="display:flex; justify-content:between; align-items:flex-start; border-bottom:2px solid #e5e7eb; padding-bottom:16px; margin-bottom:20px;">
-                <div style="flex:1;">
-                    <h1 style="font-size:20px; font-weight:800; color:#4f46e5; margin:0 0 8px;">${config.empresa_nombre}</h1>
-                    <p style="margin:0; color:#4b5563;">RUC: ${config.empresa_ruc}</p>
-                    <p style="margin:2px 0 0; color:#4b5563;">Dirección: ${config.empresa_direccion || 'No especificada'}</p>
-                    <p style="margin:2px 0 0; color:#4b5563;">Teléfono: ${config.empresa_telefono || ''}</p>
+            <div style="${esTicketOTermico ? 'text-align:center; border-bottom:1px dashed #e5e7eb; padding-bottom:12px; margin-bottom:12px;' : 'display:flex; justify-content:between; align-items:flex-start; border-bottom:2px solid #e5e7eb; padding-bottom:16px; margin-bottom:20px;'}">
+                <div style="${esTicketOTermico ? 'margin-bottom:10px;' : 'flex:1;'}">
+                    <h1 style="font-size:${esTicketOTermico ? '15px' : '20px'}; font-weight:800; color:#4f46e5; margin:0 0 6px;">${config.empresa_nombre}</h1>
+                    <p style="margin:0; color:#4b5563; font-size:${esTicketOTermico ? '10px' : '12px'};">RUC: ${config.empresa_ruc}</p>
+                    <p style="margin:2px 0 0; color:#4b5563; font-size:${esTicketOTermico ? '10px' : '12px'};">Dirección: ${config.empresa_direccion || 'No especificada'}</p>
+                    <p style="margin:2px 0 0; color:#4b5563; font-size:${esTicketOTermico ? '10px' : '12px'};">Teléfono: ${config.empresa_telefono || ''}</p>
                 </div>
-                <div style="border:2px solid #4f46e5; padding:16px; border-radius:8px; text-align:center; min-width:180px; background-color:#faf5ff;">
-                    <h2 style="font-size:14px; margin:0 0 4px; font-weight:800; color:#4f46e5; text-transform:uppercase;">${venta.tipo_comprobante} Electronica</h2>
-                    <p style="font-size:16px; font-weight:700; margin:0; font-family:monospace;">${venta.serie_comprobante}-${venta.correlativo_comprobante}</p>
+                <div style="${esTicketOTermico ? 'border:1px solid #4f46e5; padding:8px; border-radius:6px; display:inline-block; background-color:#faf5ff; min-width:140px;' : 'border:2px solid #4f46e5; padding:16px; border-radius:8px; text-align:center; min-width:180px; background-color:#faf5ff;'}">
+                    <h2 style="font-size:${esTicketOTermico ? '11px' : '14px'}; margin:0 0 2px; font-weight:800; color:#4f46e5; text-transform:uppercase;">${tituloComprobante}</h2>
+                    <p style="font-size:${esTicketOTermico ? '13px' : '16px'}; font-weight:700; margin:0; font-family:monospace;">${venta.serie_comprobante}-${venta.correlativo_comprobante}</p>
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; background-color:#f9fafb; padding:12px; border-radius:6px; border:1px solid #f3f4f6;">
-                <div>
-                    <h3 style="font-size:11px; text-transform:uppercase; color:#9ca3af; margin:0 0 4px;">Datos del Adquiriente</h3>
+            <div style="${esTicketOTermico ? 'display:block; margin-bottom:16px; background-color:#f9fafb; padding:10px; border-radius:6px; border:1px solid #f3f4f6; font-size:10px;' : 'display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; background-color:#f9fafb; padding:12px; border-radius:6px; border:1px solid #f3f4f6;'}">
+                <div style="${esTicketOTermico ? 'margin-bottom:8px; border-bottom:1px dashed #e5e7eb; padding-bottom:6px;' : ''}">
+                    <h3 style="font-size:${esTicketOTermico ? '9px' : '11px'}; text-transform:uppercase; color:#9ca3af; margin:0 0 4px;">Datos del Adquiriente</h3>
                     <p style="margin:0; font-weight:700;">${venta.cliente_nombre}</p>
                     <p style="margin:2px 0 0; color:#4b5563;">Condición de Pago: <strong>${venta.condicion_pago}</strong></p>
                     ${pagosHtml}
                     ${venta.condicion_pago === 'Credito' ? `<p style="margin:2px 0 0; color:#ef4444; font-weight:600;">Vencimiento: ${venta.fecha_vencimiento}</p>` : ''}
-                    ${venta.observaciones ? `<p style="margin:6px 0 0; font-size:10px; color:#4b5563; font-style:italic; line-height:1.2;"><strong>Obs:</strong> ${venta.observaciones}</p>` : ''}
+                    ${venta.observaciones ? `<p style="margin:6px 0 0; font-size:9px; color:#4b5563; font-style:italic; line-height:1.2;"><strong>Obs:</strong> ${venta.observaciones}</p>` : ''}
                 </div>
                 <div>
-                    <h3 style="font-size:11px; text-transform:uppercase; color:#9ca3af; margin:0 0 4px;">Información del Comprobante</h3>
+                    <h3 style="font-size:${esTicketOTermico ? '9px' : '11px'}; text-transform:uppercase; color:#9ca3af; margin:0 0 4px;">Información del Comprobante</h3>
                     <p style="margin:0;">Fecha de Emisión: <strong>${formatFecha(venta.fecha_venta)}</strong></p>
                     <p style="margin:2px 0 0;">Moneda de Operación: <strong>${venta.moneda}</strong></p>
                     ${venta.moneda === 'USD' ? `<p style="margin:2px 0 0; color:#d97706;">Tipo Cambio Fijo: S/ ${venta.tipo_cambio.toFixed(4)}</p>` : ''}
                 </div>
             </div>
 
-            <table style="width:100%; border-collapse:collapse; text-align:left; margin-bottom:24px;">
+            <table style="width:100%; border-collapse:collapse; text-align:left; margin-bottom:16px; font-size:${esTicketOTermico ? '10px' : '12px'};">
                 <thead>
                     <tr style="background-color:#4f46e5; color:white;">
-                        <th style="padding:10px; font-weight:600; font-size:11px;">Descripción del Producto / Garantía</th>
-                        <th style="padding:10px; font-weight:600; font-size:11px; text-align:center; width:80px;">Cant.</th>
-                        <th style="padding:10px; font-weight:600; font-size:11px; text-align:right; width:100px;">P. Unitario</th>
-                        <th style="padding:10px; font-weight:600; font-size:11px; text-align:right; width:100px;">Valor Venta</th>
+                        <th style="padding:${esTicketOTermico ? '6px 4px' : '10px'}; font-weight:600; font-size:${esTicketOTermico ? '9px' : '11px'};">Descripción / Garantía</th>
+                        <th style="padding:${esTicketOTermico ? '6px 4px' : '10px'}; font-weight:600; font-size:${esTicketOTermico ? '9px' : '11px'}; text-align:center; width:${esTicketOTermico ? '40px' : '80px'};">Cant.</th>
+                        <th style="padding:${esTicketOTermico ? '6px 4px' : '10px'}; font-weight:600; font-size:${esTicketOTermico ? '9px' : '11px'}; text-align:right; width:${esTicketOTermico ? '60px' : '100px'};">P. Unit</th>
+                        <th style="padding:${esTicketOTermico ? '6px 4px' : '10px'}; font-weight:600; font-size:${esTicketOTermico ? '9px' : '11px'}; text-align:right; width:${esTicketOTermico ? '70px' : '100px'};">Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${detalles.map(d => {
                         const seriesText = d.series_vendidas.length > 0 
-                            ? `<div style="font-size:9px; color:#4f46e5; font-family:monospace; margin-top:2px;">S/N: ${d.series_vendidas.join(', ')}</div>` 
+                            ? `<div style="font-size:8px; color:#4f46e5; font-family:monospace; margin-top:2px;">S/N: ${d.series_vendidas.join(', ')}</div>` 
                             : '';
                         const garantiaText = d.meses_garantia > 0 
-                            ? `<span style="font-size:9px; background-color:#e0f2fe; color:#0369a1; padding:2px 4px; border-radius:3px; font-weight:600; margin-left:8px;">Garantía: ${d.meses_garantia} meses</span>`
-                            : '<span style="font-size:9px; background-color:#f3f4f6; color:#6b7280; padding:2px 4px; border-radius:3px; margin-left:8px;">Sin garantía</span>';
+                            ? `<span style="font-size:8px; background-color:#e0f2fe; color:#0369a1; padding:1px 3px; border-radius:2px; font-weight:600; margin-left:4px;">Garantía: ${d.meses_garantia} m</span>`
+                            : '<span style="font-size:8px; background-color:#f3f4f6; color:#6b7280; padding:1px 3px; border-radius:2px; margin-left:4px;">Sin gar.</span>';
 
                         return `
                             <tr style="border-bottom:1px solid #e5e7eb;">
-                                <td style="padding:10px;">
+                                <td style="padding:${esTicketOTermico ? '6px 4px' : '10px'};">
                                     <div style="font-weight:700;">${d.producto_nombre} ${garantiaText}</div>
                                     ${seriesText}
                                 </td>
-                                <td style="padding:10px; text-align:center;">${d.cantidad} U.</td>
-                                <td style="padding:10px; text-align:right;">${formatCurrency(d.precio_unitario, venta.moneda)}</td>
-                                <td style="padding:10px; text-align:right; font-weight:700;">${formatCurrency(d.subtotal, venta.moneda)}</td>
+                                <td style="padding:${esTicketOTermico ? '6px 4px' : '10px'}; text-align:center;">${d.cantidad} U.</td>
+                                <td style="padding:${esTicketOTermico ? '6px 4px' : '10px'}; text-align:right;">${formatCurrency(d.precio_unitario, venta.moneda)}</td>
+                                <td style="padding:${esTicketOTermico ? '6px 4px' : '10px'}; text-align:right; font-weight:700;">${formatCurrency(d.subtotal, venta.moneda)}</td>
                             </tr>
                         `;
                     }).join('')}
                 </tbody>
             </table>
 
-            <div style="display:flex; justify-content:flex-end;">
-                <div style="width:250px;">
+            <div style="display:flex; justify-content:flex-end; font-size:${esTicketOTermico ? '11px' : '12px'};">
+                <div style="width:${esTicketOTermico ? '100%' : '250px'};">
                     ${venta.tipo_comprobante === 'Factura' ? `
-                    <div style="display:flex; justify-content:between; padding:4px 0; border-bottom:1px solid #f3f4f6;">
+                    <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f3f4f6;">
                         <span style="color:#6b7280;">Subtotal Neto (Sin IGV)</span>
                         <span style="font-weight:700;">${formatCurrency(venta.subtotal, venta.moneda)}</span>
                     </div>
-                    <div style="display:flex; justify-content:between; padding:4px 0; border-bottom:1px solid #f3f4f6;">
+                    <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f3f4f6;">
                         <span style="color:#6b7280;">IGV Gravado (18.00%)</span>
                         <span style="font-weight:700;">${formatCurrency(venta.igv, venta.moneda)}</span>
                     </div>
                     ` : `
-                    <div style="display:flex; justify-content:between; padding:4px 0; border-bottom:1px solid #f3f4f6;">
+                    <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f3f4f6;">
                         <span style="color:#6b7280;">Subtotal</span>
                         <span style="font-weight:700;">${formatCurrency(venta.total, venta.moneda)}</span>
                     </div>
                     `}
-                    <div style="display:flex; justify-content:between; padding:8px 0; font-size:14px; font-weight:800; color:#4f46e5;">
+                    <div style="display:flex; justify-content:space-between; padding:8px 0; font-size:${esTicketOTermico ? '13px' : '14px'}; font-weight:800; color:#4f46e5;">
                         <span>Importe Total</span>
                         <span>${formatCurrency(venta.total, venta.moneda)}</span>
                     </div>
                 </div>
             </div>
 
-            <div style="margin-top:40px; border-top:1px solid #e5e7eb; padding-top:16px; text-align:center; color:#9ca3af; font-size:10px;">
-                <p style="margin:0;">Representación impresa de la ${venta.tipo_comprobante} Electrónica local.</p>
+            <div style="margin-top:${esTicketOTermico ? '20px' : '40px'}; border-top:1px solid #e5e7eb; padding-top:12px; text-align:center; color:#9ca3af; font-size:${esTicketOTermico ? '9px' : '10px'};">
+                <p style="margin:0;">${pieRepresentacion}</p>
                 <p style="margin:4px 0 0;">¡Gracias por su preferencia!</p>
             </div>
         `;
 
         // Opciones de html2pdf
         const opt = {
-            margin:       10,
+            margin:       esTicketOTermico ? [4, 4, 4, 4] : 10,
             filename:     `${venta.tipo_comprobante}_${venta.serie_comprobante}-${venta.correlativo_comprobante}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            html2canvas:  { scale: esTicketOTermico ? 3 : 2, useCORS: true },
+            jsPDF:        esTicketOTermico 
+                ? { unit: 'mm', format: [80, 150 + detalles.length * 15], orientation: 'portrait' }
+                : { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         // Generar descarga PDF de forma asíncrona

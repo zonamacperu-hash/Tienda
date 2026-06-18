@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity Stock - Sistema de Gestión</title>
+    <!-- Google Fonts: Outfit for sleek typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m7.5 4.27 9 5.15"/>
+                        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                        <path d="m3.3 7 8.7 5 8.7-5"/>
+                        <path d="M12 22V12"/>
+                    </svg>
+                    <span>Antigravity<span class="logo-highlight">Stock</span></span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <div class="menu-group">General</div>
+                <button class="menu-item active" data-target="dashboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="14" rx="1"/></svg>
+                    <span>Dashboard</span>
+                </button>
+                <button class="menu-item" data-target="inventario">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                    <span>Inventario</span>
+                </button>
+
+                <div class="menu-group">Operaciones de Venta</div>
+                <button class="menu-item" data-target="clientes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>Clientes</span>
+                </button>
+                <button class="menu-item" data-target="nueva-venta">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                    <span>Nueva Venta</span>
+                </button>
+
+                <div class="menu-group">Operaciones de Compra</div>
+                <button class="menu-item" data-target="proveedores">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span>Proveedores</span>
+                </button>
+                <button class="menu-item" data-target="nueva-compra">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span>Nueva Compra</span>
+                </button>
+
+                <div class="menu-group">Auditoría</div>
+                <button class="menu-item" data-target="historial">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+                    <span>Historial</span>
+                </button>
+                <button class="menu-item" data-target="reportes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span>Reportes</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <p class="app-version">v1.0.0 Stable</p>
+                <p class="app-author">Antigravity AI Lab</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content section-dashboard" id="main-content-area">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="navbar-left">
+                    <h1 id="current-section-title">Dashboard</h1>
+                    <p id="current-section-subtitle">Resumen visual e indicadores generales del negocio</p>
+                </div>
+                <div class="navbar-right">
+                    <div class="date-time-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span id="current-date-display">Cargando fecha...</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="section-dashboard" class="content-section active-section">
+                <!-- Metrics Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-card metric-sales">
+                        <div class="metric-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                        </div>
+                        <div class="metric-info">
+                            <h3>Total Ventas</h3>
+                            <p class="metric-value" id="dash-total-sales">$0.00</p>
+                            <span class="metric-trend text-green" id="dash-sales-count">0 transacciones</span>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card metric-purchases">
+                        <div class="metric-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+                        </div>
+                        <div class="metric-info">
+                            <h3>Total Compras</h3>
+                            <p class="metric-value" id="dash-total-purchases">$0.00</p>
+                            <span class="metric-trend text-orange" id="dash-purchases-count">0 transacciones</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card metric-balance">
+                        <div class="metric-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        </div>
+                        <div class="metric-info">
+                            <h3>Balance Neto</h3>
+                            <p class="metric-value" id="dash-net-balance">$0.00</p>
+                            <span class="metric-trend" id="dash-balance-percentage">Resultado operativo</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card metric-stock-alert">
+                        <div class="metric-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                        </div>
+                        <div class="metric-info">
+                            <h3>Stock Bajo</h3>
+                            <p class="metric-value text-red" id="dash-low-stock-count">0</p>
+                            <span class="metric-trend text-red" id="dash-low-stock-text">Productos críticos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Layout Grid -->
+                <div class="dashboard-grid">
+                    <!-- Left: Low Stock Alerts and Stats -->
+                    <div class="dash-column">
+                        <div class="dashboard-card glass-panel alert-card">
+                            <div class="card-header border-red">
+                                <h2>⚠️ Alertas de Stock Bajo</h2>
+                                <span class="badge badge-danger" id="alert-badge-count">0 Productos</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert-list" id="dash-alerts-list">
+                                    <!-- Dynamic list of low stock items -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mini Visual Chart/Analytics -->
+                        <div class="dashboard-card glass-panel mt-4">
+                            <div class="card-header border-blue">
+                                <h2>📊 Distribución de Categorías</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="category-analytics" id="category-bars-container">
+                                    <!-- Dynamic bars of stock distribution -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Recent Transactions -->
+                    <div class="dash-column">
+                        <div class="dashboard-card glass-panel h-full">
+                            <div class="card-header border-purple">
+                                <h2>⏱️ Transacciones Recientes</h2>
+                                <button class="btn btn-outline btn-xs" id="btn-go-to-history">Ver todo</button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table-minimal">
+                                        <thead>
+                                            <tr>
+                                                <th>Tipo</th>
+                                                <th>Producto</th>
+                                                <th>Cant.</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dash-recent-transactions-tbody">
+                                            <!-- Dynamic table rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Inventario Section -->
+            <section id="section-inventario" class="content-section">
+                <div class="glass-panel">
+                    <div class="table-controls">
+                        <div class="search-box">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input type="text" id="search-inventario" placeholder="Buscar por SKU o Nombre...">
+                        </div>
+                        <div class="filter-box">
+                            <select id="filter-inventario-categoria">
+                                <option value="all">Todas las Categorías</option>
+                                <!-- Categories dynamically loaded -->
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="btn-abrir-modal-producto">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                            Agregar Producto
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table-styled">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Nombre</th>
+                                    <th>Categoría</th>
+                                    <th class="text-center">Stock Actual</th>
+                                    <th class="text-center">Ajuste Rápido</th>
+                                    <th>P. Compra</th>
+                                    <th>P. Venta</th>
+                                    <th>Estado</th>
+                                    <th class="text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventario-tbody">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Clientes Section -->
+            <section id="section-clientes" class="content-section">
+                <div class="glass-panel">
+                    <div class="table-controls">
+                        <div class="search-box">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input type="text" id="search-clientes" placeholder="Buscar por Nombre o Email...">
+                        </div>
+                        <div class="spacer"></div>
+                        <button class="btn btn-green" id="btn-abrir-modal-cliente">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="16" x2="22" y1="11" y2="11"/></svg>
+                            Agregar Cliente
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table-styled">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Teléfono</th>
+                                    <th>Email</th>
+                                    <th class="text-right">Historial de Compras ($)</th>
+                                    <th class="text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientes-tbody">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Nueva Venta Section -->
+            <section id="section-nueva-venta" class="content-section">
+                <div class="operation-layout">
+                    <!-- Form side -->
+                    <div class="glass-panel operation-form-card">
+                        <div class="card-header border-green mb-4">
+                            <h2>Formulario de Venta</h2>
+                        </div>
+                        <form id="form-nueva-venta" class="styled-form">
+                            <div class="form-group">
+                                <label for="venta-cliente">Seleccionar Cliente <span class="required">*</span></label>
+                                <select id="venta-cliente" required>
+                                    <option value="" disabled selected>-- Elija un Cliente --</option>
+                                    <!-- Loaded dynamically -->
+                                </select>
+                            </div>
+
+                            <div class="cart-product-selection-box" style="border: 1px solid var(--color-border-light); border-radius: 8px; padding: 12px; margin-bottom: 16px; background-color: rgba(255, 255, 255, 0.4);">
+                                <h3 style="font-size: 0.9rem; margin-top: 0; margin-bottom: 8px; color: var(--color-text-dark); font-weight: 700;">Agregar Productos</h3>
+                                
+                                <div class="form-group">
+                                    <label for="venta-producto">Seleccionar Producto</label>
+                                    <select id="venta-producto">
+                                        <option value="" disabled selected>-- Elija un Producto --</option>
+                                        <!-- Loaded dynamically -->
+                                    </select>
+                                    <div id="venta-stock-feedback" class="form-feedback-info">
+                                        <!-- Live stock and price display -->
+                                    </div>
+                                </div>
+
+                                <div id="venta-serial-container" class="form-group" style="display: none;">
+                                    <label for="venta-serial">Seleccionar Número de Serie</label>
+                                    <select id="venta-serial">
+                                        <option value="" disabled selected>-- Elija un Número de Serie --</option>
+                                        <!-- Loaded dynamically -->
+                                    </select>
+                                </div>
+
+                                <div class="form-grid-2">
+                                    <div class="form-group">
+                                        <label for="venta-cantidad">Cantidad</label>
+                                        <input type="number" id="venta-cantidad" min="1" placeholder="Ej: 1" disabled>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="venta-precio-mostrado">Precio de Venta</label>
+                                        <input type="text" id="venta-precio-mostrado" readonly class="input-readonly" value="$0.00">
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn btn-green btn-full mt-2" id="btn-agregar-producto-carrito" style="height: 38px; font-size: 0.85rem;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Agregar a la Venta
+                                </button>
+                            </div>
+
+                            <!-- Carrito Temporal Table -->
+                            <div class="cart-table-container mb-3" style="overflow-x: auto; max-height: 180px; border: 1px solid var(--color-border-light); border-radius: 8px;">
+                                <table class="table-styled" style="font-size: 0.8rem; margin: 0; width: 100%;">
+                                    <thead>
+                                        <tr style="background-color: #f8fafc;">
+                                            <th style="padding: 10px; font-size: 0.7rem;">SKU</th>
+                                            <th style="padding: 10px; font-size: 0.7rem;">Producto</th>
+                                            <th style="padding: 10px; font-size: 0.7rem; text-align: center;">Cant.</th>
+                                            <th style="padding: 10px; font-size: 0.7rem; text-align: right;">Unitario</th>
+                                            <th style="padding: 10px; font-size: 0.7rem; text-align: right;">Subtotal</th>
+                                            <th style="padding: 10px; font-size: 0.7rem; text-align: center;">Quitar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cart-tbody">
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-3">No hay productos agregados.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <button type="submit" class="btn btn-green btn-full mt-2" id="btn-registrar-venta">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                                Confirmar Venta
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Receipt side -->
+                    <div class="glass-panel operation-receipt-card border-green">
+                        <div class="receipt-header">
+                            <div class="receipt-logo">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3m18 0a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2m18 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/></svg>
+                                <span>TICKET DE VENTA PREVIO</span>
+                            </div>
+                            <p class="receipt-date" id="receipt-venta-fecha">Fecha: --/--/----</p>
+                        </div>
+                        <div class="receipt-body">
+                            <div class="receipt-row">
+                                <span class="label">Cliente:</span>
+                                <span class="value font-semibold" id="receipt-venta-cliente">No seleccionado</span>
+                            </div>
+                            <hr class="receipt-divider">
+                            <div class="receipt-items-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px; padding-right: 4px;">
+                                <div id="receipt-venta-items">
+                                    <div class="text-center text-muted" style="font-size: 0.8rem; py-2;">Sin productos en la venta</div>
+                                </div>
+                            </div>
+                            <hr class="receipt-divider">
+                            <div class="receipt-total-row">
+                                <span class="total-label">TOTAL NETO:</span>
+                                <span class="total-value text-green" id="receipt-venta-total">$0.00</span>
+                            </div>
+                        </div>
+                        <div class="receipt-footer">
+                            <p>¡Gracias por operar con Antigravity Stock!</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Proveedores Section -->
+            <section id="section-proveedores" class="content-section">
+                <div class="glass-panel">
+                    <div class="table-controls">
+                        <div class="search-box">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input type="text" id="search-proveedores" placeholder="Buscar por Proveedor o Contacto...">
+                        </div>
+                        <div class="spacer"></div>
+                        <button class="btn btn-orange" id="btn-abrir-modal-proveedor">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/><line x1="12" x2="12" y1="7" y2="13"/><line x1="9" x2="15" y1="10" y2="10"/></svg>
+                            Agregar Proveedor
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table-styled">
+                            <thead>
+                                <tr>
+                                    <th>Nombre Proveedor</th>
+                                    <th>Persona de Contacto</th>
+                                    <th>Teléfono</th>
+                                    <th>Productos que Suministra</th>
+                                    <th class="text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="proveedores-tbody">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Nueva Compra Section -->
+            <section id="section-nueva-compra" class="content-section">
+                <div class="operation-layout">
+                    <!-- Form side -->
+                    <div class="glass-panel operation-form-card">
+                        <div class="card-header border-orange mb-4">
+                            <h2>Formulario de Reabastecimiento</h2>
+                        </div>
+                        <form id="form-nueva-compra" class="styled-form">
+                            <div class="form-group">
+                                <label for="compra-proveedor">Seleccionar Proveedor <span class="required">*</span></label>
+                                <select id="compra-proveedor" required>
+                                    <option value="" disabled selected>-- Elija un Proveedor --</option>
+                                    <!-- Loaded dynamically -->
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="compra-producto">Seleccionar Producto <span class="required">*</span></label>
+                                <select id="compra-producto" required>
+                                    <option value="" disabled selected>-- Elija un Producto --</option>
+                                    <!-- Loaded dynamically -->
+                                </select>
+                                <div id="compra-stock-feedback" class="form-feedback-info">
+                                    <!-- Live stock display -->
+                                </div>
+                            </div>
+
+                            <div id="compra-serial-container" class="form-group" style="display: none;">
+                                <label for="compra-seriales">Números de Serie a Ingresar <span class="required">*</span> <span style="font-weight: normal; font-size: 0.72rem; color: var(--color-text-muted);">(Separados por comas)</span></label>
+                                <input type="text" id="compra-seriales" placeholder="Ej: SN-MON-503, SN-MON-504">
+                            </div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="compra-cantidad">Cantidad a Comprar <span class="required">*</span></label>
+                                    <input type="number" id="compra-cantidad" min="1" placeholder="Ej: 10" required disabled>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="compra-costo-unitario">Costo Unitario de Compra ($) <span class="required">*</span></label>
+                                    <input type="number" id="compra-costo-unitario" step="0.01" min="0.01" placeholder="Costo sugerido..." required disabled>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-orange btn-full mt-4" id="btn-registrar-compra">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                Confirmar Reabastecimiento
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Receipt side -->
+                    <div class="glass-panel operation-receipt-card border-orange">
+                        <div class="receipt-header">
+                            <div class="receipt-logo">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                                <span>ORDEN DE COMPRA PREVIA</span>
+                            </div>
+                            <p class="receipt-date" id="receipt-compra-fecha">Fecha: --/--/----</p>
+                        </div>
+                        <div class="receipt-body">
+                            <div class="receipt-row">
+                                <span class="label">Proveedor:</span>
+                                <span class="value font-semibold" id="receipt-compra-proveedor">No seleccionado</span>
+                            </div>
+                            <hr class="receipt-divider">
+                            <div class="receipt-row">
+                                <span class="label">Producto:</span>
+                                <span class="value" id="receipt-compra-producto">No seleccionado</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span class="label">Cantidad:</span>
+                                <span class="value" id="receipt-compra-cantidad">0</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span class="label">Costo Unitario:</span>
+                                <span class="value" id="receipt-compra-costo">$0.00</span>
+                            </div>
+                            <hr class="receipt-divider">
+                            <div class="receipt-total-row">
+                                <span class="total-label">COSTO TOTAL:</span>
+                                <span class="total-value text-orange" id="receipt-compra-total">$0.00</span>
+                            </div>
+                        </div>
+                        <div class="receipt-footer">
+                            <p>Registro de aumento de stock directo.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Historial Section -->
+            <section id="section-historial" class="content-section">
+                <div class="glass-panel">
+                    <div class="table-controls">
+                        <div class="search-box">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input type="text" id="search-historial" placeholder="Buscar por Producto, Cliente o Proveedor...">
+                        </div>
+                        <div class="filter-box">
+                            <select id="filter-historial-tipo">
+                                <option value="all">Todos los Movimientos</option>
+                                <option value="Venta">Solo Ventas (Ingresos)</option>
+                                <option value="Compra">Solo Compras (Reabastos)</option>
+                            </select>
+                        </div>
+                        <div class="spacer"></div>
+                        <button class="btn btn-outline btn-sm" id="btn-limpiar-historial-datos">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                            Reiniciar App a Fábrica
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table-styled">
+                            <thead>
+                                <tr>
+                                    <th>Fecha y Hora</th>
+                                    <th>Tipo Movimiento</th>
+                                    <th>Entidad (Cliente/Proveedor)</th>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-right">Total Transacción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historial-tbody">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reportes Section -->
+            <section id="section-reportes" class="content-section">
+                <div class="glass-panel">
+                    <div class="card-header border-purple mb-4" style="border-bottom: 2px solid #e2e8f0; padding-bottom: 12px;">
+                        <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--color-text-dark);">Generación de Reportes Operacionales</h2>
+                    </div>
+                    
+                    <div class="filters-grid" style="display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 15px; align-items: flex-end; margin-bottom: 20px; background-color: rgba(255, 255, 255, 0.4); padding: 15px; border-radius: 12px; border: 1px solid var(--color-border-light);">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="reporte-tipo" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-dark); margin-bottom: 6px;">Tipo de Reporte</label>
+                            <select id="reporte-tipo" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--color-border-light); padding: 0 10px; font-size: 0.85rem;">
+                                <option value="inventario">Reporte de Inventario Actual</option>
+                                <option value="ventas" selected>Reporte de Ventas</option>
+                                <option value="compras">Reporte de Compras</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="reporte-fecha-desde" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-dark); margin-bottom: 6px;">Fecha Desde</label>
+                            <input type="date" id="reporte-fecha-desde" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--color-border-light); padding: 0 10px; font-size: 0.85rem;">
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="reporte-fecha-hasta" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-dark); margin-bottom: 6px;">Fecha Hasta</label>
+                            <input type="date" id="reporte-fecha-hasta" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--color-border-light); padding: 0 10px; font-size: 0.85rem;">
+                        </div>
+                        
+                        <div class="report-actions-container" style="display: flex; gap: 10px; height: 38px;">
+                            <button type="button" class="btn btn-purple" id="btn-exportar-excel" title="Exportar a Excel (.xlsx)">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="14" rx="1"/></svg>
+                                Excel
+                            </button>
+                            <button type="button" class="btn btn-purple" id="btn-exportar-pdf" title="Descargar Reporte en PDF">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- No Data Alert Container -->
+                    <div id="reporte-alerta-vacio" class="alert-empty-state" style="display: none; margin-bottom: 20px; border: 1px dashed var(--color-red); padding: 15px; border-radius: 8px; background-color: rgba(239, 68, 68, 0.05); text-align: center; color: var(--color-red);">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; margin: 0 auto 8px; display: block;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <p id="reporte-alerta-texto" style="font-weight: 600; font-size: 0.9rem; margin: 0;">No hay datos disponibles en el rango de fechas seleccionado.</p>
+                    </div>
+
+                    <div class="table-responsive" id="reporte-preview-container">
+                        <table class="table-styled" id="reporte-tabla">
+                            <thead id="reporte-thead">
+                                <!-- Loaded dynamically based on report type -->
+                            </thead>
+                            <tbody id="reporte-tbody">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: AGREGAR / EDITAR PRODUCTO -->
+    <div id="modal-producto" class="modal-overlay">
+        <div class="modal-card glass-panel border-blue animate-zoom">
+            <div class="modal-header">
+                <h3 id="modal-producto-titulo">Agregar Nuevo Producto</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <form id="form-producto">
+                <input type="hidden" id="prod-original-sku">
+                <div class="form-group">
+                    <label for="prod-sku">SKU del Producto <span class="required">*</span></label>
+                    <input type="text" id="prod-sku" placeholder="Ej: PROD-101" required>
+                </div>
+                <div class="form-group">
+                    <label for="prod-nombre">Nombre del Producto <span class="required">*</span></label>
+                    <input type="text" id="prod-nombre" placeholder="Ej: Mouse Ergonómico" required>
+                </div>
+                <div class="form-group">
+                    <label for="prod-categoria">Categoría <span class="required">*</span></label>
+                    <input type="text" id="prod-categoria" list="categorias-existentes" placeholder="Ej: Accesorios" required>
+                    <datalist id="categorias-existentes">
+                        <!-- Populated by JS -->
+                    </datalist>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="prod-stock">Stock Inicial <span class="required">*</span></label>
+                        <input type="number" id="prod-stock" min="0" value="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prod-stock-min">Stock Mínimo Alerta <span class="required">*</span></label>
+                        <input type="number" id="prod-stock-min" min="0" value="3" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label" style="flex-direction: row; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; margin-bottom: 6px;">
+                        <input type="checkbox" id="prod-requiere-serial" style="width: auto; cursor: pointer;">
+                        <span>¿Requiere control por número de serie?</span>
+                    </label>
+                </div>
+                <div id="prod-seriales-container" class="form-group" style="display: none;">
+                    <label for="prod-seriales-textarea">Números de Serie <span class="required">*</span> <span style="font-weight: normal; font-size: 0.72rem; color: var(--color-text-muted);">(Separados por comas)</span></label>
+                    <textarea id="prod-seriales-textarea" rows="3" placeholder="Ej: SN-KBD-101, SN-KBD-102, SN-KBD-103" style="font-family: monospace; resize: vertical;"></textarea>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="prod-precio-compra">Precio de Compra ($) <span class="required">*</span></label>
+                        <input type="number" id="prod-precio-compra" step="0.01" min="0.01" placeholder="Ej: 5.20" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prod-precio-venta">Precio de Venta ($) <span class="required">*</span></label>
+                        <input type="number" id="prod-precio-venta" step="0.01" min="0.01" placeholder="Ej: 12.00" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline btn-cerrar-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-guardar-producto">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: AGREGAR / EDITAR CLIENTE -->
+    <div id="modal-cliente" class="modal-overlay">
+        <div class="modal-card glass-panel border-green animate-zoom">
+            <div class="modal-header">
+                <h3 id="modal-cliente-titulo">Agregar Nuevo Cliente</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <form id="form-cliente">
+                <input type="hidden" id="cli-id">
+                <div class="form-group">
+                    <label for="cli-nombre">Nombre Completo <span class="required">*</span></label>
+                    <input type="text" id="cli-nombre" placeholder="Ej: Andrés Ramos" required>
+                </div>
+                <div class="form-group">
+                    <label for="cli-telefono">Teléfono <span class="required">*</span></label>
+                    <input type="tel" id="cli-telefono" placeholder="Ej: 555-1234" required>
+                </div>
+                <div class="form-group">
+                    <label for="cli-email">Correo Electrónico <span class="required">*</span></label>
+                    <input type="email" id="cli-email" placeholder="Ej: andres@email.com" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline btn-cerrar-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-green" id="btn-guardar-cliente">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: AGREGAR / EDITAR PROVEEDOR -->
+    <div id="modal-proveedor" class="modal-overlay">
+        <div class="modal-card glass-panel border-orange animate-zoom">
+            <div class="modal-header">
+                <h3 id="modal-proveedor-titulo">Agregar Nuevo Proveedor</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <form id="form-proveedor">
+                <input type="hidden" id="prov-id">
+                <div class="form-group">
+                    <label for="prov-nombre">Nombre del Proveedor / Empresa <span class="required">*</span></label>
+                    <input type="text" id="prov-nombre" placeholder="Ej: Componentes del Pacífico S.A." required>
+                </div>
+                <div class="form-group">
+                    <label for="prov-contacto">Persona de Contacto <span class="required">*</span></label>
+                    <input type="text" id="prov-contacto" placeholder="Ej: Lucía Méndez" required>
+                </div>
+                <div class="form-group">
+                    <label for="prov-telefono">Teléfono <span class="required">*</span></label>
+                    <input type="tel" id="prov-telefono" placeholder="Ej: 555-9876" required>
+                </div>
+                <div class="form-group">
+                    <label for="prov-productos">Productos que suministra <span class="required">*</span></label>
+                    <input type="text" id="prov-productos" placeholder="Ej: Memoria RAM, Discos SSD" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline btn-cerrar-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-orange" id="btn-guardar-proveedor">Guardar Proveedor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NOTIFICACIONES TOAST FLOATING CONTAINER -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- SheetJS CDN for Excel generation -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF CDN for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <!-- Main JavaScript Logic -->
+    <script src="app.js"></script>
+</body>
+</html>

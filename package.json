@@ -1,0 +1,21 @@
+{
+  "name": "antigravity-stock",
+  "version": "1.0.0",
+  "description": "Sistema interactivo y premium de gestión de inventario, ventas y compras.",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server ./ -p 3000 -o",
+    "dev": "npx http-server ./ -p 3000 -o"
+  },
+  "keywords": [
+    "inventory",
+    "dashboard",
+    "vanilla-js",
+    "glassmorphism"
+  ],
+  "author": "Antigravity AI Lab",
+  "license": "ISC",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

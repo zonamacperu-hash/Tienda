@@ -19,6 +19,7 @@ CREATE TABLE configuracion_sistema (
     empresa_email VARCHAR(100),
     moneda_defecto VARCHAR(3) DEFAULT 'PEN', -- 'PEN' o 'USD'
     tipo_cambio_actual DECIMAL(10, 4) NOT NULL DEFAULT 3.7500, -- Tipo de cambio del día (PEN por 1 USD)
+    logo_path VARCHAR(255), -- Ruta del logotipo de la empresa
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.security import check_password_hash
@@ -12,6 +13,11 @@ from server.sales_processor import procesar_venta_transaccional
 
 app = Flask(__name__, static_folder='../static', static_url_path='')
 CORS(app)  # Habilitar CORS para desarrollo local
+
+# Configuración de carpeta para subida de logotipo
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'storage')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # ==============================================================================
 # ENRUTAMIENTO ESTÁTICO (SPA)
@@ -114,6 +120,69 @@ def config_sistema():
             """, (nuevo_tc, usuario_id))
             
         return jsonify({"exito": True, "mensaje": "Configuración actualizada con éxito."})
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
+
+@app.route('/api/config/logo', methods=['POST', 'DELETE'])
+def config_logo():
+    if request.method == 'POST':
+        if 'logo' not in request.files:
+            return jsonify({"exito": False, "mensaje": "No se subió ningún archivo."}), 400
+            
+        file = request.files['logo']
+        if file.filename == '':
+            return jsonify({"exito": False, "mensaje": "Nombre de archivo no válido."}), 400
+            
+        if file and allowed_file(file.filename):
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = f"logo_{int(time.time())}.{ext}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            # Obtener y borrar logotipo anterior si existe
+            config = query_db("SELECT logo_path FROM configuracion_sistema LIMIT 1", one=True)
+            if config and config['logo_path']:
+                old_filename = os.path.basename(config['logo_path'])
+                old_filepath = os.path.join(app.config['UPLOAD_FOLDER'], old_filename)
+                if os.path.exists(old_filepath):
+                    try:
+                        os.remove(old_filepath)
+                    except Exception as e:
+                        print(f"Error al remover logotipo anterior: {e}")
+            
+            # Guardar el nuevo archivo
+            file.save(filepath)
+            
+            # Actualizar base de datos
+            logo_relative_path = f"/static/storage/{filename}"
+            if config:
+                execute_db("UPDATE configuracion_sistema SET logo_path = ? WHERE id = (SELECT id FROM configuracion_sistema LIMIT 1)", (logo_relative_path,))
+            else:
+                execute_db("INSERT INTO configuracion_sistema (empresa_nombre, empresa_ruc, logo_path) VALUES ('Empresa por defecto', '00000000000', ?)", (logo_relative_path,))
+                
+            return jsonify({
+                "exito": True,
+                "mensaje": "Logotipo actualizado con éxito.",
+                "logo_path": logo_relative_path
+            })
+        else:
+            return jsonify({"exito": False, "mensaje": "Formato de archivo no permitido. Solo se aceptan JPG, JPEG y PNG."}), 400
+            
+    elif request.method == 'DELETE':
+        config = query_db("SELECT logo_path FROM configuracion_sistema LIMIT 1", one=True)
+        if config and config['logo_path']:
+            filename = os.path.basename(config['logo_path'])
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except Exception as e:
+                    print(f"Error al eliminar logotipo físico: {e}")
+                    
+            execute_db("UPDATE configuracion_sistema SET logo_path = NULL WHERE id = (SELECT id FROM configuracion_sistema LIMIT 1)")
+            return jsonify({"exito": True, "mensaje": "Logotipo eliminado con éxito."})
+        else:
+            return jsonify({"exito": False, "mensaje": "No hay ningún logotipo configurado."}), 400
 
 @app.route('/api/config/reset', methods=['POST'])
 def reset_database():

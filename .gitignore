@@ -158,3 +158,9 @@ database/*.db
 
 # User Uploaded Storage
 static/storage/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example

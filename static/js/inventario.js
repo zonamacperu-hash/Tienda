@@ -185,10 +185,6 @@ function abrirModalProducto(productoId = null) {
                 <label class="form-label" for="prod-descripcion">Descripción / Notas</label>
                 <textarea class="form-textarea" id="prod-descripcion" style="height:60px; min-height:60px;">${isEdit ? prod.descripcion || '' : ''}</textarea>
             </div>
-            <div class="form-group">
-                <label class="form-label" for="prod-detalles-tecnicos">Especificaciones Técnicas (Modelo)</label>
-                <textarea class="form-textarea" id="prod-detalles-tecnicos" placeholder="Ej: Procesador Ryzen 7 5700U, RAM 16GB, SSD 512GB..." style="height:60px; min-height:60px;">${isEdit ? prod.detalles_tecnicos || '' : ''}</textarea>
-            </div>
             
             <div class="form-group">
                 <label class="form-label" for="prod-moneda">Moneda Base</label>
@@ -259,7 +255,6 @@ function abrirModalProducto(productoId = null) {
             nombre: document.getElementById('prod-nombre').value,
             categoria_id: parseInt(document.getElementById('prod-categoria').value),
             descripcion: document.getElementById('prod-descripcion').value,
-            detalles_tecnicos: document.getElementById('prod-detalles-tecnicos').value,
             precio_base: parseFloat(document.getElementById('prod-precio-costo').value),
             precio_final: parseFloat(document.getElementById('prod-precio-venta').value),
             moneda: document.getElementById('prod-moneda').value,

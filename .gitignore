@@ -158,3 +158,6 @@ database/*.db
 
 # User Uploaded Storage
 static/storage/
+
+# Temporary scratch directory
+scratch/

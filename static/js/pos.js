@@ -938,8 +938,8 @@ async function imprimirComprobantePDF(ventaId) {
                 </div>
             </div>
 
-            <div style="${esTicketOTermico ? 'display:block; margin-bottom:16px; background-color:#f9fafb; padding:10px; border-radius:6px; border:1px solid #f3f4f6; font-size:10px;' : 'display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; background-color:#f9fafb; padding:12px; border-radius:6px; border:1px solid #f3f4f6;'}">
-                <div style="${esTicketOTermico ? 'margin-bottom:8px; border-bottom:1px dashed #e5e7eb; padding-bottom:6px;' : ''}">
+            <div style="${esTicketOTermico ? 'display:block; margin-bottom:16px; background-color:#f9fafb; padding:10px; border-radius:6px; border:1px solid #f3f4f6; font-size:10px;' : 'display:flex; gap:16px; margin-bottom:24px; background-color:#f9fafb; padding:12px; border-radius:6px; border:1px solid #f3f4f6;'}">
+                <div style="${esTicketOTermico ? 'margin-bottom:8px; border-bottom:1px dashed #e5e7eb; padding-bottom:6px;' : 'flex:1;'}">
                     <h3 style="font-size:${esTicketOTermico ? '9px' : '11px'}; text-transform:uppercase; color:#9ca3af; margin:0 0 4px;">Datos del Adquiriente</h3>
                     <p style="margin:0; font-weight:700;">${venta.cliente_nombre}</p>
                     <p style="margin:2px 0 0; color:#4b5563;">Condición de Pago: <strong>${venta.condicion_pago}</strong></p>
@@ -947,7 +947,7 @@ async function imprimirComprobantePDF(ventaId) {
                     ${venta.condicion_pago === 'Credito' ? `<p style="margin:2px 0 0; color:#ef4444; font-weight:600;">Vencimiento: ${venta.fecha_vencimiento}</p>` : ''}
                     ${venta.observaciones ? `<p style="margin:6px 0 0; font-size:9px; color:#4b5563; font-style:italic; line-height:1.2;"><strong>Obs:</strong> ${venta.observaciones}</p>` : ''}
                 </div>
-                <div>
+                <div style="${esTicketOTermico ? '' : 'flex:1;'}">
                     <h3 style="font-size:${esTicketOTermico ? '9px' : '11px'}; text-transform:uppercase; color:#9ca3af; margin:0 0 4px;">Información del Comprobante</h3>
                     <p style="margin:0;">Fecha de Emisión: <strong>${formatFecha(venta.fecha_venta)}</strong></p>
                     <p style="margin:2px 0 0;">Moneda de Operación: <strong>${venta.moneda}</strong></p>
@@ -1023,14 +1023,40 @@ async function imprimirComprobantePDF(ventaId) {
             margin:       esTicketOTermico ? [4, 4, 4, 4] : 10,
             filename:     `${venta.tipo_comprobante}_${venta.serie_comprobante}-${venta.correlativo_comprobante}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: esTicketOTermico ? 3 : 2, useCORS: true },
+            html2canvas:  { 
+                scale: esTicketOTermico ? 3 : 2, 
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: esTicketOTermico ? 300 : 800
+            },
             jsPDF:        esTicketOTermico 
                 ? { unit: 'mm', format: [80, 150 + detalles.length * 15], orientation: 'portrait' }
                 : { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
+        // Crear contenedor wrapper con position: fixed para ocultar del viewport de usuario pero mantener en el DOM
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '0';
+        wrapper.style.top = '0';
+        wrapper.style.width = '0';
+        wrapper.style.height = '0';
+        wrapper.style.overflow = 'visible';
+        wrapper.style.zIndex = '-9999';
+        wrapper.style.pointerEvents = 'none';
+
+        if (!esTicketOTermico) {
+            printContainer.style.width = '800px';
+        }
+        
+        wrapper.appendChild(printContainer);
+        document.body.appendChild(wrapper);
+
         // Generar descarga PDF de forma asíncrona
-        html2pdf().set(opt).from(printContainer).save();
+        await html2pdf().set(opt).from(printContainer).save();
+        
+        document.body.removeChild(wrapper);
         mostrarToast("Comprobante generado e impreso en PDF con éxito.", "success");
 
     } catch (err) {

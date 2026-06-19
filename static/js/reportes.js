@@ -100,6 +100,12 @@ async function exportarPDFUtilidades() {
         const resStats = await fetch(`${API_URL}/api/dashboard/stats`);
         const stats = await resStats.json();
 
+        // Convertir el logo a Base64 para evitar problemas de CORS y bloqueos de html2canvas
+        let logoBase64 = null;
+        if (config.logo_path) {
+            logoBase64 = await imageToBase64(`${API_URL}${config.logo_path}`);
+        }
+
         // Crear plantilla HTML en memoria
         const printContainer = document.createElement('div');
         printContainer.style.padding = '32px';
@@ -115,7 +121,7 @@ async function exportarPDFUtilidades() {
         printContainer.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #6366f1; padding-bottom:16px; margin-bottom:24px;">
                 <div style="display:flex; align-items:center; gap:16px;">
-                    ${config.logo_path ? `<img src="${API_URL}${config.logo_path}" style="height:50px; width:50px; object-fit:contain; border-radius:4px;" alt="Logo" />` : ''}
+                    ${logoBase64 ? `<img src="${logoBase64}" style="height:50px; width:50px; object-fit:contain; border-radius:4px;" alt="Logo" />` : ''}
                     <div>
                         <h1 style="font-size:22px; font-weight:800; color:#4f46e5; margin:0 0 4px;">${config.empresa_nombre}</h1>
                         <p style="margin:0; color:#6b7280; font-size:10px;">RUC: ${config.empresa_ruc} | Dirección: ${config.empresa_direccion || ''}</p>
@@ -131,9 +137,9 @@ async function exportarPDFUtilidades() {
                 Este informe financiero consolida las ganancias brutas y netas obtenidas por la empresa mediante la evaluación del costo base (precio de compra/mayorista) versus el precio final cobrado en cada transacción POS realizada en la plataforma local.
             </p>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:32px;">
+            <div style="display:flex; gap:20px; margin-bottom:32px;">
                 <!-- Balance Soles -->
-                <div style="border:1px solid #e5e7eb; padding:16px; border-radius:8px; background-color:#faf5ff;">
+                <div style="flex:1; border:1px solid #e5e7eb; padding:16px; border-radius:8px; background-color:#faf5ff;">
                     <h3 style="font-size:12px; color:#4f46e5; text-transform:uppercase; margin:0 0 12px; font-weight:700; border-bottom:1px solid #ddd; padding-bottom:6px;">Balance en Soles (PEN)</h3>
                     <div style="display:flex; justify-content:between; padding:4px 0;">
                         <span>Ventas de Hoy:</span>
@@ -150,7 +156,7 @@ async function exportarPDFUtilidades() {
                 </div>
 
                 <!-- Balance Dólares -->
-                <div style="border:1px solid #e5e7eb; padding:16px; border-radius:8px; background-color:#ecfeff;">
+                <div style="flex:1; border:1px solid #e5e7eb; padding:16px; border-radius:8px; background-color:#ecfeff;">
                     <h3 style="font-size:12px; color:#0891b2; text-transform:uppercase; margin:0 0 12px; font-weight:700; border-bottom:1px solid #ddd; padding-bottom:6px;">Balance en Dólares (USD)</h3>
                     <div style="display:flex; justify-content:between; padding:4px 0;">
                         <span>Ventas de Hoy:</span>
@@ -182,14 +188,39 @@ async function exportarPDFUtilidades() {
         `;
 
         const opt = {
-            margin:       15,
+            margin:       10,
             filename:     `Reporte_Financiero_Utilidades_${new Date().toISOString().slice(0,10)}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 800
+            },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().set(opt).from(printContainer).save();
+        // Crear contenedor wrapper con position: fixed para ocultar del viewport de usuario pero mantener en el DOM
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '0';
+        wrapper.style.top = '0';
+        wrapper.style.width = '0';
+        wrapper.style.height = '0';
+        wrapper.style.overflow = 'visible';
+        wrapper.style.zIndex = '-9999';
+        wrapper.style.pointerEvents = 'none';
+
+        printContainer.style.width = '800px';
+        
+        wrapper.appendChild(printContainer);
+        document.body.appendChild(wrapper);
+
+        // Generar descarga PDF de forma asíncrona
+        await html2pdf().set(opt).from(printContainer).save();
+        
+        document.body.removeChild(wrapper);
         mostrarToast("Reporte de utilidades PDF descargado con éxito.", "success");
 
     } catch (err) {

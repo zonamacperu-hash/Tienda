@@ -1010,11 +1010,11 @@ async function imprimirOrdenIngresoPDF(ordenId) {
                 </div>
             </div>
 
-            <div style="margin-top:80px; display:grid; grid-template-columns:1fr 1fr; gap:64px; text-align:center;">
-                <div>
+            <div style="margin-top:80px; display:flex; gap:64px; text-align:center; justify-content:space-around;">
+                <div style="flex:1;">
                     <div style="border-top:1px solid #9ca3af; width:180px; margin:0 auto; padding-top:6px;">Firma del Cliente</div>
                 </div>
-                <div>
+                <div style="flex:1;">
                     <div style="border-top:1px solid #9ca3af; width:180px; margin:0 auto; padding-top:6px;">Firma del Técnico / Recibido</div>
                 </div>
             </div>
@@ -1029,11 +1029,36 @@ async function imprimirOrdenIngresoPDF(ordenId) {
             margin:       10,
             filename:     `OrdenIngreso_Soporte_${String(o.id).padStart(5, '0')}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 800
+            },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().set(opt).from(printContainer).save();
+        // Crear contenedor wrapper con position: fixed para ocultar del viewport de usuario pero mantener en el DOM
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '0';
+        wrapper.style.top = '0';
+        wrapper.style.width = '0';
+        wrapper.style.height = '0';
+        wrapper.style.overflow = 'visible';
+        wrapper.style.zIndex = '-9999';
+        wrapper.style.pointerEvents = 'none';
+
+        printContainer.style.width = '800px';
+        
+        wrapper.appendChild(printContainer);
+        document.body.appendChild(wrapper);
+
+        // Generar descarga PDF de forma asíncrona
+        await html2pdf().set(opt).from(printContainer).save();
+        
+        document.body.removeChild(wrapper);
     } catch (err) {
         console.error(err);
         mostrarToast("Error al exportar PDF de ingreso.", "danger");
@@ -1088,14 +1113,14 @@ async function imprimirOrdenSalidaPDF(ordenId) {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; background-color:#f9fafb; padding:12px; border-radius:6px; border:1px solid #e5e7eb;">
-                <div>
+            <div style="display:flex; gap:16px; margin-bottom:20px; background-color:#f9fafb; padding:12px; border-radius:6px; border:1px solid #e5e7eb;">
+                <div style="flex:1;">
                     <h3 style="font-size:10px; text-transform:uppercase; color:#9ca3af; margin:0 0 4px; font-weight:700;">Datos del Propietario</h3>
                     <p style="margin:0; font-weight:700; font-size:12px;">${o.cliente_nombre}</p>
                     <p style="margin:2px 0 0; color:#4b5563;">Doc: ${o.cliente_documento || 'No registrado'}</p>
                     <p style="margin:2px 0 0; color:#4b5563;">Método de Pago: <strong>${o.metodo_pago || 'No registrado'}</strong></p>
                 </div>
-                <div>
+                <div style="flex:1;">
                     <h3 style="font-size:10px; text-transform:uppercase; color:#9ca3af; margin:0 0 4px; font-weight:700;">Datos del Servicio</h3>
                     <p style="margin:0;">Ingreso: <strong>${formatFecha(o.fecha_ingreso)}</strong></p>
                     <p style="margin:2px 0 0;">Entrega: <strong>${formatFecha(o.fecha_entrega)}</strong></p>
@@ -1168,11 +1193,36 @@ async function imprimirOrdenSalidaPDF(ordenId) {
             margin:       10,
             filename:     `OrdenSalida_Garantia_${String(o.id).padStart(5, '0')}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 800
+            },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().set(opt).from(printContainer).save();
+        // Crear contenedor wrapper con position: fixed para ocultar del viewport de usuario pero mantener en el DOM
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '0';
+        wrapper.style.top = '0';
+        wrapper.style.width = '0';
+        wrapper.style.height = '0';
+        wrapper.style.overflow = 'visible';
+        wrapper.style.zIndex = '-9999';
+        wrapper.style.pointerEvents = 'none';
+
+        printContainer.style.width = '800px';
+        
+        wrapper.appendChild(printContainer);
+        document.body.appendChild(wrapper);
+
+        // Generar descarga PDF de forma asíncrona
+        await html2pdf().set(opt).from(printContainer).save();
+        
+        document.body.removeChild(wrapper);
     } catch (err) {
         console.error(err);
         mostrarToast("Error al exportar PDF de garantía.", "danger");

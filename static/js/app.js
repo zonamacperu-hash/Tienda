@@ -124,6 +124,7 @@ async function irAVista(vista) {
     const titulos = {
         'dashboard': 'Dashboard de Control',
         'pos': 'Punto de Venta (POS)',
+        'cotizaciones': 'Generador de Cotizaciones (Precios Manuales)',
         'inventario': 'Gestión de Inventario y Series',
         'movimientos': 'Resumen de Movimientos (Kárdex)',
         'compras': 'Registro de Compras (Abastecimiento)',
@@ -142,6 +143,9 @@ async function irAVista(vista) {
                 break;
             case 'pos':
                 await renderPOS(viewContainer);
+                break;
+            case 'cotizaciones':
+                await renderCotizaciones(viewContainer);
                 break;
             case 'inventario':
                 await renderInventario(viewContainer);
@@ -369,5 +373,23 @@ function inicializarSidebarColapsable() {
                 localStorage.setItem('erp_sidebar_collapsed', nowCollapsed);
             }
         });
+    }
+}
+
+// Convertir una URL de imagen a Base64 de forma asíncrona para evitar problemas de CORS/carga en html2canvas
+async function imageToBase64(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.error("Error converting image to Base64:", e);
+        return null;
     }
 }

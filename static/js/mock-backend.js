@@ -16,8 +16,9 @@
         localStorage.removeItem('force_mock');
     }
 
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const isMockActive = !isLocalhost || localStorage.getItem('force_mock') === 'true';
+    // Por defecto se conecta al backend Flask real tanto en localhost como en producción (Cloudflare Pages + Tunnel).
+    // Si deseas simular la base de datos en LocalStorage (modo demo sin backend), ingresa a la URL agregando '?mock=true'.
+    const isMockActive = localStorage.getItem('force_mock') === 'true';
 
     if (!isMockActive) {
         return; // Ejecución normal: el backend Flask real responderá

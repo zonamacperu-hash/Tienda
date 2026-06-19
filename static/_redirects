@@ -1,0 +1,2 @@
+# Proxy requests starting with /api/* to the Cloudflare Tunnel backend API URL
+/api/* https://api.tudominio.com/api/:splat 200

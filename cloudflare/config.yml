@@ -1,0 +1,12 @@
+# Configuración de Cloudflare Tunnel (cloudflared)
+# Reemplaza <TUNNEL_UUID> con el ID real de tu túnel creado en Cloudflare
+tunnel: <TUNNEL_UUID>
+credentials-file: /root/.cloudflared/<TUNNEL_UUID>.json
+
+ingress:
+  # Reemplaza con tu subdominio de Cloudflare que apuntará a esta API
+  - hostname: api.tudominio.com
+    service: http://localhost:5000
+  
+  # Regla comodín para retornar 404 a cualquier otra petición no coincidente
+  - service: http_status:404

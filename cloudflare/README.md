@@ -82,3 +82,22 @@ Para conectar tu servidor o máquina local (donde corre Flask y la base de datos
 - **Cero puertos abiertos**: Nadie puede atacar directamente tu IP pública ni es necesario abrir puertos de firewall.
 - **SSL Gratuito**: Todo el tráfico entre Cloudflare Pages, el cliente y el túnel viaja encriptado vía HTTPS.
 - **Sin problemas de CORS**: Al ser proxy inverso sobre el mismo dominio de Pages, el navegador confía nativamente en las llamadas API.
+
+---
+
+## 4. Solución de Problemas (Troubleshooting)
+
+### Error: "Asset too large" al desplegar en Cloudflare Pages
+Este error ocurre porque Cloudflare Pages tiene un límite estricto de **25 MB por archivo individual**. Si intentas subir un archivo que excede este límite, el despliegue fallará.
+
+#### Causa Común:
+* **Directorio de salida incorrecto**: Si dejas el "Build output directory" vacío o como `.` (la raíz) en la configuración del Dashboard de Cloudflare, la plataforma intentará subir todo el repositorio. Esto incluye el historial de Git (carpeta `.git/` que suele tener packfiles grandes), la base de datos `db.sqlite` local o el entorno virtual `venv/`.
+
+#### Solución:
+1. **En la Consola Web de Cloudflare Pages**:
+   - Ve a tu proyecto de Pages > **Settings** > **Builds & deploys** > **Build settings**.
+   - Asegúrate de que el **Build output directory** (Publish directory) esté configurado como **`static`** (y no como la raíz `.` ni vacío).
+2. **Exclusiones Locales**:
+   - Hemos creado un archivo `.assetsignore` en la raíz del proyecto para evitar que Wrangler suba carpetas de backend (`venv/`, `database/`, `server/`) en caso de hacer despliegues manuales por línea de comandos.
+3. **Seguridad**:
+   - Nunca publiques la raíz de tu proyecto en Cloudflare Pages. Hacerlo expone públicamente tu código de Python y tu base de datos SQLite con todos tus registros e información de la empresa. Publicar únicamente la carpeta `static/` mantiene la base de datos totalmente segura.

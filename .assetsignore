@@ -1,0 +1,21 @@
+# Exclude backend, virtual environment, and system files from Cloudflare Pages uploads
+# This prevents "Asset too large" errors and protects sensitive data from being publicly served.
+
+.git/
+venv/
+.venv/
+env/
+ENV/
+database/
+server/
+cloudflare/
+scratch/
+tests.py
+package.json
+package-lock.json
+netlify.toml
+run.sh
+requirements.txt
+*.py
+*.sqlite
+*.db

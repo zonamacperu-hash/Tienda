@@ -18,6 +18,12 @@ CORS(app)  # Habilitar CORS para desarrollo local
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'storage')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# Limitar el tamaño máximo de archivo a subir a 5 Megabytes (evita Asset Too Large y ataques de denegación de servicio)
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return jsonify({"exito": False, "mensaje": "El archivo es demasiado grande. El límite de tamaño es de 5 MB."}), 413
 
 # ==============================================================================
 # ENRUTAMIENTO ESTÁTICO (SPA)

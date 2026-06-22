@@ -982,5 +982,120 @@ class TestERPPOSLogic(unittest.TestCase):
         self.assertAlmostEqual(db_compra_4['subtotal'], 250.00, places=2)
         self.assertAlmostEqual(db_compra_4['igv'], 0.00, places=2)
 
+    def test_11_prestamos_intertienda(self):
+        """Valida el ciclo completo de un préstamo: registro, validación de series, devolución parcial y conversión a venta."""
+        from server.app import app
+        client = app.test_client()
+        
+        # 1. Cargar stock inicial e ingresar series físicas
+        execute_db("UPDATE productos SET stock_actual = 5 WHERE id = 1")
+        execute_db("INSERT INTO producto_series (producto_id, numero_serie, estado) VALUES (1, 'SN-PREST-01', 'Disponible')")
+        execute_db("INSERT INTO producto_series (producto_id, numero_serie, estado) VALUES (1, 'SN-PREST-02', 'Disponible')")
+        
+        # 2. Registrar préstamo de 2 unidades
+        payload_prestamo = {
+            "tienda_destino_id": 1,
+            "usuario_id": 1,
+            "observaciones": "Préstamo de prueba",
+            "items": [
+                {
+                    "producto_id": 1,
+                    "cantidad": 2,
+                    "series": ["SN-PREST-01", "SN-PREST-02"]
+                }
+            ]
+        }
+        res = client.post('/api/prestamos', json=payload_prestamo)
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data['exito'])
+        prestamo_id = data['prestamo_id']
+        
+        # Verificar stock descontado
+        p1 = query_db("SELECT stock_actual FROM productos WHERE id = 1", one=True)
+        self.assertEqual(p1['stock_actual'], 3) # 5 - 2
+        
+        # Verificar estado de las series físicas
+        s1 = query_db("SELECT estado, prestamo_id FROM producto_series WHERE numero_serie = 'SN-PREST-01'", one=True)
+        s2 = query_db("SELECT estado, prestamo_id FROM producto_series WHERE numero_serie = 'SN-PREST-02'", one=True)
+        self.assertEqual(s1['estado'], 'Prestado')
+        self.assertEqual(s2['estado'], 'Prestado')
+        self.assertEqual(s1['prestamo_id'], prestamo_id)
+        self.assertEqual(s2['prestamo_id'], prestamo_id)
+        
+        # 3. Intentar vender una serie prestada de forma directa (debe fallar ya que no está 'Disponible')
+        venta_err = {
+            "cliente_id": 1,
+            "usuario_id": 2,
+            "tipo_comprobante": "Ticket",
+            "moneda": "PEN",
+            "condicion_pago": "Contado",
+            "pagos": [{"metodo_pago": "Efectivo", "monto": 4000.00}],
+            "items": [
+                {
+                    "producto_id": 1,
+                    "cantidad": 1,
+                    "tipo_precio": "Final",
+                    "series_seleccionadas": ["SN-PREST-01"]
+                }
+            ]
+        }
+        with self.assertRaises(ValueError):
+            procesar_venta_transaccional(venta_err)
+            
+        # 4. Registrar devolución parcial de 1 serie
+        res_ret = client.post(f'/api/prestamos/{prestamo_id}/return', json={
+            "series": ["SN-PREST-01"]
+        })
+        self.assertEqual(res_ret.status_code, 200)
+        self.assertTrue(res_ret.get_json()['exito'])
+        
+        # Verificar que la serie devuelta vuelve a estar Disponible y desvinculada
+        s1_dev = query_db("SELECT estado, prestamo_id FROM producto_series WHERE numero_serie = 'SN-PREST-01'", one=True)
+        self.assertEqual(s1_dev['estado'], 'Disponible')
+        self.assertIsNone(s1_dev['prestamo_id'])
+        
+        # Verificar stock restaurado a 4 (3 + 1)
+        p1_ret = query_db("SELECT stock_actual FROM productos WHERE id = 1", one=True)
+        self.assertEqual(p1_ret['stock_actual'], 4)
+        
+        # Verificar estado del préstamo: debe ser 'Devuelto Parcial'
+        prest = query_db("SELECT estado FROM prestamos_intertienda WHERE id = ?", [prestamo_id], one=True)
+        self.assertEqual(prest['estado'], 'Devuelto Parcial')
+        
+        # 5. Convertir a venta la serie restante ('SN-PREST-02') pasándole prestamo_id
+        venta_ok = {
+            "cliente_id": 1,
+            "usuario_id": 2,
+            "tipo_comprobante": "Ticket",
+            "moneda": "PEN",
+            "condicion_pago": "Contado",
+            "pagos": [{"metodo_pago": "Efectivo", "monto": 4000.00}],
+            "items": [
+                {
+                    "producto_id": 1,
+                    "cantidad": 1,
+                    "tipo_precio": "Final",
+                    "series_seleccionadas": ["SN-PREST-02"]
+                }
+            ],
+            "prestamo_id": prestamo_id
+        }
+        res_venta = procesar_venta_transaccional(venta_ok)
+        self.assertTrue(res_venta['exito'])
+        
+        # Verificar que la serie pasa a Vendido
+        s2_sold = query_db("SELECT estado, venta_id FROM producto_series WHERE numero_serie = 'SN-PREST-02'", one=True)
+        self.assertEqual(s2_sold['estado'], 'Vendido')
+        self.assertEqual(s2_sold['venta_id'], res_venta['venta_id'])
+        
+        # Verificar stock final (sigue en 4, ya que se pre-incrementó para neutralizar el trigger)
+        p1_final = query_db("SELECT stock_actual FROM productos WHERE id = 1", one=True)
+        self.assertEqual(p1_final['stock_actual'], 4)
+        
+        # Verificar estado del préstamo: como ya no quedan series 'Prestado', debe cambiar a 'Convertido en Venta'
+        prest_final = query_db("SELECT estado FROM prestamos_intertienda WHERE id = ?", [prestamo_id], one=True)
+        self.assertEqual(prest_final['estado'], 'Convertido en Venta')
+
 if __name__ == '__main__':
     unittest.main()

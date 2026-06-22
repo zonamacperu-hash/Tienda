@@ -3,6 +3,7 @@
    ============================================================================== */
 
 let carritoPOS = [];
+let conversionPrestamoId = null;
 let clientesDisponibles = [];
 let productosCatalogo = [];
 let categoriasCatalogo = [];
@@ -409,6 +410,7 @@ function removerItemCarritoPOS(index) {
 
 function limpiarCarritoPOS() {
     carritoPOS = [];
+    conversionPrestamoId = null;
     renderCarritoPOS();
 }
 
@@ -738,7 +740,8 @@ async function procesarCobroPOS() {
         fecha_vencimiento: document.getElementById('pos-fecha-vencimiento').value || null,
         observaciones: document.getElementById('pos-observaciones').value.trim(),
         items: carritoPOS,
-        pagos: pagos
+        pagos: pagos,
+        prestamo_id: conversionPrestamoId
     };
 
     try {
@@ -765,6 +768,7 @@ async function procesarCobroPOS() {
             // Resetear
             limpiarCarritoPOS();
             form.reset();
+            conversionPrestamoId = null;
             
             document.getElementById('pago-monto-efectivo').value = "0.00";
             document.getElementById('pago-monto-transferencia').value = "0.00";
@@ -1388,6 +1392,17 @@ function abrirCheckoutModal() {
         }
     }
 
+    // Mostrar/ocultar sección de items del préstamo
+    const pSec = document.getElementById('checkout-prestamo-items-section');
+    if (pSec) {
+        if (conversionPrestamoId) {
+            pSec.style.display = 'flex';
+            renderCheckoutPrestamoItems();
+        } else {
+            pSec.style.display = 'none';
+        }
+    }
+
     // Actualizar totales y desglose del modal
     actualizarTotalesCheckoutModal();
 
@@ -1413,4 +1428,63 @@ function abrirCheckoutModal() {
 
 function cerrarCheckoutModal() {
     closeModal('pos-checkout-modal');
+    const pSec = document.getElementById('checkout-prestamo-items-section');
+    if (pSec) pSec.style.display = 'none';
 }
+
+function renderCheckoutPrestamoItems() {
+    const container = document.getElementById('checkout-prestamo-items-list');
+    if (!container) return;
+    
+    container.innerHTML = carritoPOS.map((item, idx) => {
+        const seriesText = item.series_seleccionadas && item.series_seleccionadas.length > 0
+            ? `<div style="font-size:0.75rem; font-family:monospace; color:var(--color-primary); margin-top:2px;">S/N: ${item.series_seleccionadas.join(', ')}</div>`
+            : '';
+            
+        const priceFinalFormatted = formatCurrency(item.precio_final, item.moneda || 'PEN');
+        const priceBaseFormatted = formatCurrency(item.precio_base, item.moneda || 'PEN');
+        
+        return `
+            <div class="checkout-item-row" style="display:flex; flex-direction:column; gap:6px; padding-bottom:8px; border-bottom:1px solid var(--border-color);">
+                <div style="font-weight:600; font-size:0.85rem; color:var(--text-main);">${item.nombre} x ${item.cantidad} U. ${seriesText}</div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <select class="form-select" style="height:32px; font-size:0.8rem; padding:0 8px; flex-grow:1;" onchange="cambiarPrecioItemCheckout(${idx}, this.value)">
+                        <option value="Final" ${item.tipo_precio === 'Final' ? 'selected' : ''}>P. Final (${priceFinalFormatted})</option>
+                        <option value="Base" ${item.tipo_precio === 'Base' ? 'selected' : ''}>P. Base (${priceBaseFormatted})</option>
+                        <option value="Manual" ${item.tipo_precio === 'Manual' ? 'selected' : ''}>P. Manual</option>
+                    </select>
+                    <input type="number" step="0.01" min="0" id="checkout-manual-price-input-${idx}" class="form-input" style="height:32px; width:100px; font-size:0.8rem; padding:0 8px; text-align:right; display: ${item.tipo_precio === 'Manual' ? 'block' : 'none'};" placeholder="Precio..." value="${item.precio_manual || ''}" oninput="actualizarPrecioManualItemCheckout(${idx}, this.value)">
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.cambiarPrecioItemCheckout = function(idx, tipoPrecio) {
+    const item = carritoPOS[idx];
+    if (!item) return;
+    item.tipo_precio = tipoPrecio;
+    
+    const inputManual = document.getElementById(`checkout-manual-price-input-${idx}`);
+    if (inputManual) {
+        if (tipoPrecio === 'Manual') {
+            inputManual.style.display = 'block';
+            item.precio_manual = item.precio_final;
+            inputManual.value = item.precio_final;
+        } else {
+            inputManual.style.display = 'none';
+        }
+    }
+    
+    actualizarTotalesCheckoutModal();
+    validarPagosCombinados();
+};
+
+window.actualizarPrecioManualItemCheckout = function(idx, valor) {
+    const item = carritoPOS[idx];
+    if (!item) return;
+    item.precio_manual = parseFloat(valor) || 0.0;
+    
+    actualizarTotalesCheckoutModal();
+    validarPagosCombinados();
+};

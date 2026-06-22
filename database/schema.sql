@@ -183,9 +183,10 @@ CREATE TABLE producto_series (
     id SERIAL PRIMARY KEY,
     producto_id INT NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
     numero_serie VARCHAR(100) NOT NULL,
-    estado VARCHAR(20) NOT NULL DEFAULT 'Disponible' CHECK (estado IN ('Disponible', 'Vendido', 'En Garantia', 'Devuelto')),
+    estado VARCHAR(20) NOT NULL DEFAULT 'Disponible' CHECK (estado IN ('Disponible', 'Vendido', 'En Garantia', 'Devuelto', 'Prestado')),
     compra_id INT REFERENCES compras(id) ON DELETE RESTRICT, -- Documento de entrada
     venta_id INT REFERENCES ventas(id) ON DELETE SET NULL,     -- Documento de salida
+    prestamo_id INT REFERENCES prestamos_intertienda(id) ON DELETE SET NULL, -- Préstamo origen
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_producto_serie UNIQUE (producto_id, numero_serie) -- Un número de serie es único por producto
@@ -312,3 +313,28 @@ CREATE TRIGGER trg_venta_anulada
 AFTER UPDATE ON ventas
 FOR EACH ROW
 EXECUTE FUNCTION fn_revertir_stock_venta_anulada();
+
+-- ==============================================================================
+-- MODULO DE PRESTAMOS / SALIDAS TEMPORALES INTERTIENDAS
+-- ==============================================================================
+
+CREATE TABLE prestamos_intertienda (
+    id SERIAL PRIMARY KEY,
+    tienda_destino_id INT NOT NULL REFERENCES actores(id) ON DELETE RESTRICT,
+    usuario_id INT NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    fecha_prestamo TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    estado VARCHAR(25) NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Convertido en Venta', 'Devuelto', 'Devuelto Parcial')),
+    observaciones TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE prestamo_detalles (
+    id SERIAL PRIMARY KEY,
+    prestamo_id INT NOT NULL REFERENCES prestamos_intertienda(id) ON DELETE CASCADE,
+    producto_id INT NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
+    cantidad INT NOT NULL CHECK (cantidad > 0)
+);
+
+CREATE INDEX idx_prestamos_intertienda_tienda ON prestamos_intertienda(tienda_destino_id);
+CREATE INDEX idx_prestamo_detalles_prestamo ON prestamo_detalles(prestamo_id);
+

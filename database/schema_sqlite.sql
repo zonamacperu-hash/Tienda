@@ -174,9 +174,10 @@ CREATE TABLE IF NOT EXISTS producto_series (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
     numero_serie TEXT NOT NULL,
-    estado TEXT NOT NULL DEFAULT 'Disponible' CHECK (estado IN ('Disponible', 'Vendido', 'En Garantia', 'Devuelto')),
+    estado TEXT NOT NULL DEFAULT 'Disponible' CHECK (estado IN ('Disponible', 'Vendido', 'En Garantia', 'Devuelto', 'Prestado')),
     compra_id INTEGER REFERENCES compras(id) ON DELETE RESTRICT,
     venta_id INTEGER REFERENCES ventas(id) ON DELETE SET NULL,
+    prestamo_id INTEGER REFERENCES prestamos_intertienda(id) ON DELETE SET NULL,
     detalles_individuales TEXT, -- Especificaciones físicas de la unidad
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -376,4 +377,32 @@ BEGIN
     SET stock_actual = stock_actual - NEW.cantidad
     WHERE id = NEW.producto_id;
 END;
+
+-- ==============================================================================
+-- MODULO DE PRESTAMOS / SALIDAS TEMPORALES INTERTIENDAS
+-- ==============================================================================
+
+-- 17. TABLA: prestamos_intertienda (Tabla Principal)
+CREATE TABLE IF NOT EXISTS prestamos_intertienda (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tienda_destino_id INTEGER NOT NULL REFERENCES actores(id) ON DELETE RESTRICT,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    fecha_prestamo TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado TEXT NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Convertido en Venta', 'Devuelto', 'Devuelto Parcial')),
+    observaciones TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 18. TABLA: prestamo_detalles (Tabla Detalle)
+CREATE TABLE IF NOT EXISTS prestamo_detalles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prestamo_id INTEGER NOT NULL REFERENCES prestamos_intertienda(id) ON DELETE CASCADE,
+    producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0)
+);
+
+-- INDICES DE OPTIMIZACION
+CREATE INDEX IF NOT EXISTS idx_prestamos_intertienda_tienda ON prestamos_intertienda(tienda_destino_id);
+CREATE INDEX IF NOT EXISTS idx_prestamo_detalles_prestamo ON prestamo_detalles(prestamo_id);
+
 

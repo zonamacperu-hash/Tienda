@@ -131,6 +131,7 @@ async function irAVista(vista) {
         'actores': 'Clientes y Proveedores',
         'cuentas': 'Cuentas Corrientes y Créditos',
         'soporte': 'Gestión de Servicio Técnico',
+        'prestamos': 'Préstamos / Salidas Temporales Intertiendas',
         'configuracion': 'Configuración del Sistema'
     };
     headerTitle.textContent = titulos[vista] || 'Sistema ERP/POS';
@@ -167,6 +168,9 @@ async function irAVista(vista) {
                 break;
             case 'soporte':
                 await renderSoporte(viewContainer);
+                break;
+            case 'prestamos':
+                await renderPrestamos(viewContainer);
                 break;
             default:
                 viewContainer.innerHTML = '<h2>Vista no encontrada</h2>';

@@ -15,6 +15,7 @@ def procesar_venta_transaccional(datos_venta):
         "condicion_pago": str ("Contado" | "Credito"),
         "fecha_vencimiento": str (YYYY-MM-DD, opcional),
         "observaciones": str (opcional),
+        "prestamo_id": int (opcional),
         "items": [
             {
                 "producto_id": int,
@@ -29,6 +30,7 @@ def procesar_venta_transaccional(datos_venta):
     """
     
     # 1. Obtener Tipo de Cambio (TC) actual del sistema
+    prestamo_id = datos_venta.get('prestamo_id')
     config = query_db("SELECT tipo_cambio_actual FROM configuracion_sistema LIMIT 1", one=True)
     if not config:
         raise ValueError("No se ha configurado el sistema ni el tipo de cambio del día.")
@@ -89,6 +91,15 @@ def procesar_venta_transaccional(datos_venta):
             tipo_precio = item['tipo_precio']
             meses_garantia = int(item.get('meses_garantia', 0))
             
+            # Si proviene de un préstamo, revertimos temporalmente el descuento de stock previo
+            # del préstamo para que el trigger trg_venta_detalle_insert al insertar en venta_detalles
+            # lo descuente correctamente sin restar por duplicado.
+            if prestamo_id:
+                cursor.execute(
+                    "UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?",
+                    (cantidad, producto_id)
+                )
+            
             # Consultar y bloquear producto (SQLite no bloquea filas individuales con FOR UPDATE, 
             # pero la transacción atómica a nivel de conexión asegura exclusión mutua durante el COMMIT).
             producto = cursor.execute(
@@ -110,11 +121,17 @@ def procesar_venta_transaccional(datos_venta):
                     )
 
                 for numero_serie in series_enviadas:
-                    # Validar si la serie física existe y está disponible
-                    serie_fisica = cursor.execute(
-                        "SELECT id FROM producto_series WHERE producto_id = ? AND numero_serie = ? AND estado = 'Disponible'",
-                        (prod_id, numero_serie)
-                    ).fetchone()
+                    # Validar si la serie física existe y está en el estado adecuado
+                    if prestamo_id:
+                        serie_fisica = cursor.execute(
+                            "SELECT id FROM producto_series WHERE producto_id = ? AND numero_serie = ? AND estado = 'Prestado' AND prestamo_id = ?",
+                            (prod_id, numero_serie, prestamo_id)
+                        ).fetchone()
+                    else:
+                        serie_fisica = cursor.execute(
+                            "SELECT id FROM producto_series WHERE producto_id = ? AND numero_serie = ? AND estado = 'Disponible'",
+                            (prod_id, numero_serie)
+                        ).fetchone()
 
                     if not serie_fisica:
                         raise ValueError(
@@ -253,6 +270,25 @@ def procesar_venta_transaccional(datos_venta):
                 "UPDATE producto_series SET estado = ?, venta_id = ? WHERE id = ?",
                 (nuevo_estado, venta_id, s['serie_id'])
             )
+
+        # 8b. SI LA VENTA PROVIENE DE UN PRÉSTAMO, ACTUALIZAR EL ESTADO DEL PRÉSTAMO
+        if prestamo_id:
+            # Contar cuántas series del préstamo siguen en estado 'Prestado'
+            series_prestadas_restantes = cursor.execute(
+                "SELECT COUNT(*) FROM producto_series WHERE prestamo_id = ? AND estado = 'Prestado'",
+                (prestamo_id,)
+            ).fetchone()[0]
+            
+            if series_prestadas_restantes == 0:
+                cursor.execute(
+                    "UPDATE prestamos_intertienda SET estado = 'Convertido en Venta' WHERE id = ?",
+                    (prestamo_id,)
+                )
+            else:
+                cursor.execute(
+                    "UPDATE prestamos_intertienda SET estado = 'Devuelto Parcial' WHERE id = ?",
+                    (prestamo_id,)
+                )
 
         # 9. GESTIONAR CRÉDITOS O PAGOS COMBINADOS
         condicion_pago = datos_venta.get('condicion_pago', 'Contado')

@@ -883,6 +883,215 @@ def registrar_abono():
         return jsonify({"exito": False, "mensaje": f"Error: {str(e)}"}), 400
 
 # ==============================================================================
+# MÓDULO: PRÉSTAMOS / SALIDAS TEMPORALES INTERTIENDAS
+# ==============================================================================
+@app.route('/api/prestamos', methods=['GET'])
+def get_prestamos():
+    prestamos = query_db("""
+        SELECT p.*, a.nombre_razon_social as tienda_destino_nombre, u.nombre as usuario_nombre
+        FROM prestamos_intertienda p
+        JOIN actores a ON p.tienda_destino_id = a.id
+        JOIN usuarios u ON p.usuario_id = u.id
+        ORDER BY p.fecha_prestamo DESC
+    """)
+    for p in prestamos:
+        # Obtener detalles
+        detalles = query_db("""
+            SELECT pd.*, prod.nombre as producto_nombre, prod.maneja_series, prod.precio_base, prod.precio_final, prod.moneda
+            FROM prestamo_detalles pd
+            JOIN productos prod ON pd.producto_id = prod.id
+            WHERE pd.prestamo_id = ?
+        """, [p['id']])
+        
+        for d in detalles:
+            # Obtener series asociadas a este préstamo
+            series = query_db("""
+                SELECT id, numero_serie, estado, detalles_individuales
+                FROM producto_series
+                WHERE prestamo_id = ? AND producto_id = ?
+            """, [p['id'], d['producto_id']])
+            d['series'] = series
+            
+        p['items'] = detalles
+    return jsonify(prestamos)
+
+@app.route('/api/prestamos', methods=['POST'])
+def registrar_prestamo():
+    data = request.json
+    tienda_destino_id = data.get('tienda_destino_id')
+    usuario_id = data.get('usuario_id')
+    observaciones = data.get('observaciones', '')
+    items = data.get('items', [])
+    
+    if not tienda_destino_id or not usuario_id or not items:
+        return jsonify({"exito": False, "mensaje": "Faltan datos obligatorios."}), 400
+        
+    try:
+        with transaction() as cursor:
+            # 1. Crear cabecera de préstamo
+            cursor.execute("""
+                INSERT INTO prestamos_intertienda (tienda_destino_id, usuario_id, observaciones, estado)
+                VALUES (?, ?, ?, 'Pendiente')
+            """, (tienda_destino_id, usuario_id, observaciones))
+            prestamo_id = cursor.lastrowid
+            
+            # 2. Procesar cada detalle
+            for item in items:
+                producto_id = item.get('producto_id')
+                cantidad = int(item.get('cantidad', 0))
+                
+                # Obtener info del producto
+                prod = cursor.execute(
+                    "SELECT maneja_series, stock_actual, nombre FROM productos WHERE id = ?",
+                    (producto_id,)
+                ).fetchone()
+                
+                if not prod:
+                    raise ValueError(f"El producto con ID {producto_id} no existe.")
+                    
+                maneja_series = prod[0]
+                stock_actual = prod[1]
+                prod_name = prod[2]
+                
+                if stock_actual < cantidad:
+                    raise ValueError(f"Stock insuficiente para el producto '{prod_name}'. Stock actual: {stock_actual}, Solicitado: {cantidad}")
+                    
+                # Insertar detalle
+                cursor.execute("""
+                    INSERT INTO prestamo_detalles (prestamo_id, producto_id, cantidad)
+                    VALUES (?, ?, ?)
+                """, (prestamo_id, producto_id, cantidad))
+                
+                # Descontar stock
+                cursor.execute(
+                    "UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?",
+                    (cantidad, producto_id)
+                )
+                
+                # Si maneja series, verificar y actualizar estado de las series enviadas
+                if maneja_series == 1:
+                    series_enviadas = item.get('series', [])
+                    if len(series_enviadas) != cantidad:
+                        raise ValueError(f"Debe enviar exactamente {cantidad} series para el producto '{prod_name}'.")
+                        
+                    for sn in series_enviadas:
+                        # Validar disponibilidad
+                        serie = cursor.execute(
+                            "SELECT id FROM producto_series WHERE producto_id = ? AND numero_serie = ? AND estado = 'Disponible'",
+                            (producto_id, sn)
+                        ).fetchone()
+                        
+                        if not serie:
+                            raise ValueError(f"La serie '{sn}' del producto '{prod_name}' no está disponible.")
+                            
+                        # Actualizar estado de la serie a 'Prestado' y vincular al préstamo
+                        cursor.execute("""
+                            UPDATE producto_series
+                            SET estado = 'Prestado', prestamo_id = ?
+                            WHERE id = ?
+                        """, (prestamo_id, serie[0]))
+                        
+        return jsonify({"exito": True, "prestamo_id": prestamo_id, "mensaje": "Préstamo registrado correctamente."})
+    except Exception as e:
+        return jsonify({"exito": False, "mensaje": f"Error: {str(e)}"}), 400
+
+@app.route('/api/prestamos/<int:id>/return', methods=['POST'])
+def process_return(id):
+    data = request.json
+    series_devueltas = data.get('series', []) # Array de strings (números de serie)
+    tradicionales = data.get('productos_tradicionales', []) # Array de dicts {"producto_id": X, "cantidad": Y}
+    
+    if not series_devueltas and not tradicionales:
+        return jsonify({"exito": False, "mensaje": "Debe especificar al menos un ítem para devolver."}), 400
+        
+    try:
+        with transaction() as cursor:
+            # Validar existencia del préstamo
+            prestamo = cursor.execute(
+                "SELECT id, estado FROM prestamos_intertienda WHERE id = ?",
+                (id,)
+            ).fetchone()
+            
+            if not prestamo:
+                raise ValueError(f"El préstamo con ID {id} no existe.")
+                
+            # 1. Procesar series devueltas
+            for sn in series_devueltas:
+                # Buscar la serie
+                serie = cursor.execute("""
+                    SELECT id, producto_id, estado
+                    FROM producto_series
+                    WHERE prestamo_id = ? AND numero_serie = ? AND estado = 'Prestado'
+                """, (id, sn)).fetchone()
+                
+                if not serie:
+                    raise ValueError(f"La serie '{sn}' no pertenece a este préstamo o no está en estado 'Prestado'.")
+                    
+                serie_id, producto_id, estado = serie
+                
+                # Cambiar serie a Disponible y desvincular préstamo
+                cursor.execute("""
+                    UPDATE producto_series
+                    SET estado = 'Disponible', prestamo_id = NULL
+                    WHERE id = ?
+                """, (serie_id,))
+                
+                # Incrementar stock del producto
+                cursor.execute("""
+                    UPDATE productos
+                    SET stock_actual = stock_actual + 1
+                    WHERE id = ?
+                """, (producto_id,))
+                
+            # 2. Procesar tradicionales devueltos
+            for t in tradicionales:
+                prod_id = t.get('producto_id')
+                cant_ret = int(t.get('cantidad', 0))
+                
+                if cant_ret <= 0:
+                    continue
+                    
+                # Validar que pertenezca al detalle del préstamo
+                det = cursor.execute("""
+                    SELECT id FROM prestamo_detalles
+                    WHERE prestamo_id = ? AND producto_id = ?
+                """, (id, prod_id)).fetchone()
+                
+                if not det:
+                    raise ValueError(f"El producto con ID {prod_id} no pertenece a este préstamo.")
+                    
+                # Incrementar stock del producto
+                cursor.execute("""
+                    UPDATE productos
+                    SET stock_actual = stock_actual + ?
+                    WHERE id = ?
+                """, (cant_ret, prod_id))
+                
+            # 3. Actualizar estado general del préstamo
+            # Contar cuántas series de este préstamo siguen en estado 'Prestado'
+            pendientes = cursor.execute("""
+                SELECT COUNT(*) FROM producto_series
+                WHERE prestamo_id = ? AND estado = 'Prestado'
+            """, (id,)).fetchone()[0]
+            
+            if pendientes == 0:
+                cursor.execute("""
+                    UPDATE prestamos_intertienda
+                    SET estado = 'Devuelto'
+                    WHERE id = ?
+                """, (id,))
+            else:
+                cursor.execute("""
+                    UPDATE prestamos_intertienda
+                    SET estado = 'Devuelto Parcial'
+                    WHERE id = ?
+                """, (id,))
+                
+        return jsonify({"exito": True, "mensaje": "Devolución procesada con éxito. Stock de almacén restaurado."})
+    except Exception as e:
+        return jsonify({"exito": False, "mensaje": f"Error: {str(e)}"}), 400
+
+# ==============================================================================
 # MÓDULO: REPORTES Y UTILIDADES (Backend Analytics)
 # ==============================================================================
 @app.route('/api/dashboard/stats', methods=['GET'])

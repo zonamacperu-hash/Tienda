@@ -1507,4 +1507,5 @@ def soporte_entregar_equipo(id):
 # ==============================================================================
 if __name__ == '__main__':
     # Habilitar modo desarrollo y levantar en el puerto 5000
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+

@@ -100,7 +100,28 @@ async function renderConfiguracion(container) {
                         </div>
                     </div>
                 </div>
-                
+                <!-- Dirección del Servidor API (Conexión Remota / Cloudflare / Ngrok) -->
+                <div class="card">
+                    <div class="card-title">Dirección del Servidor API (Conexión Remota / Multidispositivo)</div>
+                    <form id="form-configuracion-api-url" onsubmit="event.preventDefault();">
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">
+                            Configure una URL personalizada del backend si está accediendo a esta aplicación desde Cloudflare Pages, Netlify u otro dispositivo en la red local. Esto redirigirá todas las peticiones a la dirección configurada.
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="config-api-url">URL del Servidor API</label>
+                            <input type="url" class="form-input" id="config-api-url" placeholder="Ej: http://192.168.1.15:5000 o https://xxxx.ngrok-free.app" style="width:100%;">
+                        </div>
+                        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+                            <button class="btn btn-secondary" type="button" id="btn-remover-api-url" style="padding:8px 14px; font-size:0.8rem;">
+                                Restablecer Predeterminado
+                            </button>
+                            <button class="btn btn-primary" type="button" id="btn-guardar-api-url" style="padding:8px 14px; font-size:0.8rem;">
+                                <i data-lucide="save"></i> Guardar Servidor
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
                 <!-- Restablecer Sistema -->
                 <div class="card" style="border-color: var(--color-danger); background-color: rgba(239, 68, 68, 0.02);">
                     <div class="card-title" style="color: var(--color-danger);">Zona de Peligro</div>
@@ -112,6 +133,7 @@ async function renderConfiguracion(container) {
                     </button>
                 </div>
             </div>
+
             
             <!-- Panel Lateral de Auditoría o Historial -->
             <div class="card" style="height: 100%;">
@@ -166,6 +188,43 @@ async function renderConfiguracion(container) {
     document.getElementById('btn-guardar-config').addEventListener('click', guardarConfiguracion);
     document.getElementById('btn-nuevo-usuario').addEventListener('click', abrirModalNuevoUsuario);
     document.getElementById('btn-reset-sistema').addEventListener('click', restablecerSistemaCompleto);
+
+    // Eventos del Servidor API URL
+    const configApiUrlInput = document.getElementById('config-api-url');
+    if (configApiUrlInput) {
+        configApiUrlInput.value = localStorage.getItem('erp_api_url') || '';
+    }
+    
+    document.getElementById('btn-guardar-api-url').addEventListener('click', () => {
+        const val = configApiUrlInput.value.trim();
+        if (val) {
+            try {
+                // Eliminar barra diagonal final si existe
+                let formattedUrl = val;
+                if (formattedUrl.endsWith('/')) {
+                    formattedUrl = formattedUrl.slice(0, -1);
+                }
+                new URL(formattedUrl); // Validar formato básico de URL
+                localStorage.setItem('erp_api_url', formattedUrl);
+                mostrarToast("Dirección del servidor API guardada. Recargando...", "success");
+                setTimeout(() => window.location.reload(), 1200);
+            } catch (e) {
+                mostrarToast("Por favor ingrese una URL válida (ej: http://192.168.1.15:5000).", "danger");
+            }
+        } else {
+            localStorage.removeItem('erp_api_url');
+            mostrarToast("Dirección restablecida por defecto. Recargando...", "success");
+            setTimeout(() => window.location.reload(), 1200);
+        }
+    });
+
+    document.getElementById('btn-remover-api-url').addEventListener('click', () => {
+        localStorage.removeItem('erp_api_url');
+        if (configApiUrlInput) configApiUrlInput.value = '';
+        mostrarToast("Dirección restablecida por defecto. Recargando...", "success");
+        setTimeout(() => window.location.reload(), 1200);
+    });
+
 
     // Eventos del Logotipo
     const dropzone = document.getElementById('logo-dropzone');
@@ -255,9 +314,9 @@ async function renderConfiguracion(container) {
                 }
                 const res = await fetch(`${API_URL}/api/config/logo`, {
                     method: 'POST',
-                    body: formData,
-                    credentials: 'include'
+                    body: formData
                 });
+
                 const data = await res.json();
                 if (data.exito) {
                     mostrarToast(data.mensaje, "success");
@@ -295,9 +354,9 @@ async function renderConfiguracion(container) {
 
             try {
                 const res = await fetch(`${API_URL}/api/config/logo`, {
-                    method: 'DELETE',
-                    credentials: 'include'
+                    method: 'DELETE'
                 });
+
                 const data = await res.json();
                 if (data.exito) {
                     mostrarToast(data.mensaje, "success");

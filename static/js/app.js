@@ -2,8 +2,9 @@
    LÓGICA PRINCIPAL, ENRUTADOR Y COMPONENTES GLOBALES DE LA SPA
    ============================================================================== */
 
-// URL Base de la API local (Se adapta automáticamente si se abre como archivo local file://)
-const API_URL = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : ''; 
+// URL Base de la API local (Se adapta automáticamente si se abre como archivo local file:// o si hay una URL personalizada en localStorage)
+const API_URL = localStorage.getItem('erp_api_url') || (window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : '');
+
 
 // Estado Global de la SPA
 let usuarioActivo = null;

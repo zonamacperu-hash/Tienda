@@ -1,0 +1,6 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=$HOME/public_html
+    # Sincronizar archivos excluyendo entornos y dependencias de desarrollo local
+    - /bin/rsync -av --exclude='.git' --exclude='.github' --exclude='.env' --exclude='node_modules' --exclude='tests' --exclude='phpunit.xml' --exclude='.cpanel.yml' --exclude='storage/framework/cache/data/*' --exclude='storage/framework/sessions/*' --exclude='storage/framework/views/*.php' --exclude='storage/logs/*.log' ./ $DEPLOYPATH

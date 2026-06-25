@@ -122,16 +122,7 @@ async function renderConfiguracion(container) {
                     </form>
                 </div>
 
-                <!-- Restablecer Sistema -->
-                <div class="card" style="border-color: var(--color-danger); background-color: rgba(239, 68, 68, 0.02);">
-                    <div class="card-title" style="color: var(--color-danger);">Zona de Peligro</div>
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:16px;">
-                        Restablece el sistema por completo. Se eliminarán permanentemente todos los productos, categorías, clientes, proveedores, ventas, compras, movimientos y créditos de la base de datos, dejando el sistema en blanco.
-                    </div>
-                    <button class="btn btn-danger" type="button" id="btn-reset-sistema" style="background-color: var(--color-danger); border-color: var(--color-danger); color: white;">
-                        <i data-lucide="refresh-cw"></i> Restablecer Sistema Completo
-                    </button>
-                </div>
+
             </div>
 
             
@@ -187,7 +178,6 @@ async function renderConfiguracion(container) {
     // Eventos
     document.getElementById('btn-guardar-config').addEventListener('click', guardarConfiguracion);
     document.getElementById('btn-nuevo-usuario').addEventListener('click', abrirModalNuevoUsuario);
-    document.getElementById('btn-reset-sistema').addEventListener('click', restablecerSistemaCompleto);
 
     // Eventos del Servidor API URL
     const configApiUrlInput = document.getElementById('config-api-url');
@@ -493,34 +483,6 @@ async function guardarConfiguracion() {
     } catch (err) {
         console.error(err);
         mostrarToast("No se pudo guardar la configuración.", "danger");
-    }
-}
-
-async function restablecerSistemaCompleto() {
-    if (!confirm("⚠️ ADVERTENCIA CRÍTICA:\n\n¿Está seguro de que desea restablecer el sistema por completo?\n\nEsta acción borrará permanentemente todos los productos, categorías, clientes, compras, ventas, kárdex y créditos. No se puede deshacer.")) {
-        return;
-    }
-    
-    try {
-        const res = await fetch(`${API_URL}/api/config/reset`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        
-        if (data.exito) {
-            mostrarToast(data.mensaje, "success");
-            // Cerrar sesión y recargar para refrescar la app
-            localStorage.removeItem('erp_session');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            mostrarToast(data.mensaje, "danger");
-        }
-    } catch (err) {
-        console.error(err);
-        mostrarToast("Error de conexión al restablecer el sistema.", "danger");
     }
 }
 

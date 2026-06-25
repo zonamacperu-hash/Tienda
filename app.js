@@ -2166,23 +2166,6 @@ function descargarPDF() {
     showToast("Documento PDF descargado con éxito.", "success");
 }
 
-// factory reset storage
-function triggerFactoryReset() {
-    if (confirm("⚠️ ¿Estás seguro de reiniciar la base de datos a sus valores iniciales?\nSe perderán todas tus ventas y compras nuevas.")) {
-        localStorage.clear();
-        state.inventory = JSON.parse(JSON.stringify(defaultInventory));
-        state.clients = JSON.parse(JSON.stringify(defaultClients));
-        state.providers = JSON.parse(JSON.stringify(defaultProviders));
-        state.transactions = JSON.parse(JSON.stringify(defaultTransactions));
-        ventaCarrito = [];
-        
-        saveAllToStorage();
-        renderAll();
-        
-        showToast("Base de datos restaurada a valores iniciales de fábrica.", "warning");
-        navigateToSection('dashboard');
-    }
-}
 
 /* -------------------------------------------------------------
    GLOBAL BINDINGS & EVENT LISTENERS
@@ -2235,8 +2218,7 @@ function setupEventListeners() {
     // 4b. Add to cart button bind
     document.getElementById('btn-agregar-producto-carrito').onclick = agregarAlCarrito;
 
-    // 5. Factory reset button
-    document.getElementById('btn-limpiar-historial-datos').onclick = triggerFactoryReset;
+
 
     // 6. Setup product modal checkbox/textarea dynamic behaviors
     const reqSerialCheckbox = document.getElementById('prod-requiere-serial');

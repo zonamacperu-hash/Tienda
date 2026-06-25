@@ -190,43 +190,6 @@ def config_logo():
         else:
             return jsonify({"exito": False, "mensaje": "No hay ningún logotipo configurado."}), 400
 
-@app.route('/api/config/reset', methods=['POST'])
-def reset_database():
-    from server.database import get_db_connection
-    conn = get_db_connection()
-    try:
-        # Poner la conexión en autocommit para control manual y evitar transacciones implícitas de Python
-        conn.isolation_level = None
-        # Desactivar llaves foráneas a nivel de conexión fuera de la transacción
-        conn.execute("PRAGMA foreign_keys = OFF;")
-        
-        cursor = conn.cursor()
-        cursor.execute("BEGIN TRANSACTION;")
-        
-        # Orden topológico seguro (hijos antes que padres)
-        tablas_a_limpiar = [
-            'orden_servicio_repuestos', 'ordenes_servicio', 'producto_series',
-            'compra_detalles', 'venta_detalles', 'venta_pagos',
-            'cuentas_por_cobrar', 'cuentas_por_pagar', 'compras', 'ventas',
-            'productos', 'categorias', 'actores'
-        ]
-        
-        for tabla in tablas_a_limpiar:
-            cursor.execute(f"DELETE FROM {tabla};")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name = ?;", (tabla,))
-            
-        cursor.execute("COMMIT;")
-        conn.execute("PRAGMA foreign_keys = ON;")
-        conn.close()
-        return jsonify({"exito": True, "mensaje": "Base de datos SQLite restablecida con éxito (sistema limpio)."})
-    except Exception as e:
-        try:
-            if conn.isolation_level is None:
-                cursor.execute("ROLLBACK;")
-        except Exception:
-            pass
-        conn.close()
-        return jsonify({"exito": False, "mensaje": f"Error al restablecer base de datos: {str(e)}"}), 500
 
 # ==============================================================================
 # MÓDULO: CATEGORÍAS

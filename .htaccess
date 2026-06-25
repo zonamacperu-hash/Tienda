@@ -1,0 +1,15 @@
+# cPanel / Apache Configuration for Phusion Passenger (Python Monolith)
+PassivePortRange 30000 35000
+PassengerEnabled on
+PassengerAppEnv production
+PassengerAppRoot /home/<CPANEL_USER>/public_html
+PassengerBaseURI /
+PassengerPython /home/<CPANEL_USER>/virtualenv/public_html/3.9/bin/python
+
+# Rewrite Rules to direct all non-file/non-directory traffic to Passenger
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ passenger_wsgi.py [L,QSA]
+</IfModule>

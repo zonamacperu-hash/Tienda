@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Web Crypto</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+  <h2>Web Crypto PBKDF2 Verification Test</h2>
+  <div id="out" style="font-family: monospace; font-size: 16px; padding: 10px; background: #eee; border-radius: 4px;">Running...</div>
+  <div id="target" style="font-family: monospace; font-size: 16px; padding: 10px; margin-top: 10px; background: #eef; border-radius: 4px;">Expected: ad11d792785395148665676f5c7bd4c48fdcac23a9bbca61bb471365c7dc8a8a</div>
+  <div id="match" style="font-weight: bold; margin-top: 10px; font-size: 18px;"></div>
+  
+  <script>
+    async function run() {
+      const password = "admin123";
+      const salt = "V5TyWCO1CQbXuBOH";
+      const iterations = 1000000;
+      const expected = "ad11d792785395148665676f5c7bd4c48fdcac23a9bbca61bb471365c7dc8a8a";
+      
+      const encoder = new TextEncoder();
+      const passwordBytes = encoder.encode(password);
+      const saltBytes = encoder.encode(salt);
+      
+      const baseKey = await crypto.subtle.importKey(
+        "raw",
+        passwordBytes,
+        { name: "PBKDF2" },
+        false,
+        ["deriveBits"]
+      );
+      
+      const derivedBits = await crypto.subtle.deriveBits(
+        {
+          name: "PBKDF2",
+          salt: saltBytes,
+          iterations: iterations,
+          hash: "SHA-256"
+        },
+        baseKey,
+        256
+      );
+      
+      const derivedHex = Array.from(new Uint8Array(derivedBits))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+        
+      document.getElementById("out").innerText = "Derived : " + derivedHex;
+      
+      if (derivedHex === expected) {
+        document.getElementById("match").innerText = "MATCH: YES!";
+        document.getElementById("match").style.color = "green";
+      } else {
+        document.getElementById("match").innerText = "MATCH: NO!";
+        document.getElementById("match").style.color = "red";
+      }
+    }
+    
+    run().catch(err => {
+      document.getElementById("out").innerText = "Error: " + err.message;
+    });
+  </script>
+</body>
+</html>

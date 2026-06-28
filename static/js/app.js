@@ -208,18 +208,53 @@ async function cargarLogoEmpresa() {
     try {
         const res = await fetch(`${API_URL}/api/config`);
         const config = await res.json();
-        const logoIcon = document.getElementById('sidebar-logo-icon');
-        if (logoIcon) {
-            if (config && config.logo_path) {
-                logoIcon.innerHTML = `<img src="${API_URL}${config.logo_path}" style="width: 100%; height: 100%; object-fit: contain; border-radius: var(--radius-md);" alt="Logo" />`;
-                logoIcon.style.padding = '2px';
-                logoIcon.style.background = 'none';
-                logoIcon.style.boxShadow = 'none';
-            } else {
-                logoIcon.innerHTML = 'EG';
-                logoIcon.style.padding = '';
-                logoIcon.style.background = '';
-                logoIcon.style.boxShadow = '';
+        
+        if (config) {
+            // 1. Título y nombre de la empresa
+            if (config.empresa_nombre) {
+                const sidebarText = document.getElementById('sidebar-logo-text');
+                if (sidebarText) sidebarText.textContent = config.empresa_nombre;
+                
+                const loginText = document.getElementById('login-logo-text');
+                if (loginText) loginText.textContent = `${config.empresa_nombre} - Gestión Comercial`;
+                
+                document.title = `${config.empresa_nombre} - ERP & POS`;
+            }
+            
+            // 2. Logotipo (Base64 data:image o URL absoluta)
+            const logoPath = config.logo_path;
+            const logoSrc = logoPath ? (logoPath.startsWith('data:') ? logoPath : `${API_URL}${logoPath}`) : null;
+            
+            // Logotipo en Sidebar
+            const logoIcon = document.getElementById('sidebar-logo-icon');
+            if (logoIcon) {
+                if (logoSrc) {
+                    logoIcon.innerHTML = `<img src="${logoSrc}" style="width: 100%; height: 100%; object-fit: contain; border-radius: var(--radius-md);" alt="Logo" />`;
+                    logoIcon.style.padding = '2px';
+                    logoIcon.style.background = 'none';
+                    logoIcon.style.boxShadow = 'none';
+                } else {
+                    logoIcon.innerHTML = config.empresa_nombre ? config.empresa_nombre.substring(0, 2).toUpperCase() : 'EG';
+                    logoIcon.style.padding = '';
+                    logoIcon.style.background = '';
+                    logoIcon.style.boxShadow = '';
+                }
+            }
+            
+            // Logotipo en Login
+            const loginLogoIcon = document.getElementById('login-logo-icon');
+            if (loginLogoIcon) {
+                if (logoSrc) {
+                    loginLogoIcon.innerHTML = `<img src="${logoSrc}" style="width: 100%; height: 100%; object-fit: contain; border-radius: var(--radius-md);" alt="Logo" />`;
+                    loginLogoIcon.style.padding = '2px';
+                    loginLogoIcon.style.background = 'none';
+                    loginLogoIcon.style.boxShadow = 'none';
+                } else {
+                    loginLogoIcon.innerHTML = config.empresa_nombre ? config.empresa_nombre.substring(0, 2).toUpperCase() : 'EG';
+                    loginLogoIcon.style.padding = '';
+                    loginLogoIcon.style.background = '';
+                    loginLogoIcon.style.boxShadow = '';
+                }
             }
         }
     } catch (err) {

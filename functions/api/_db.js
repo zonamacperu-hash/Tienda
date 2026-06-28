@@ -87,7 +87,7 @@ export async function hashPassword(password) {
   const encoder = new TextEncoder();
   const passwordBytes = encoder.encode(password);
   const saltBytes = encoder.encode(salt);
-  const iterations = 1000000;
+  const iterations = 100000;
   
   const baseKey = await crypto.subtle.importKey(
     "raw",

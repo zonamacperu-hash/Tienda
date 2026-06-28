@@ -363,9 +363,9 @@ VALUES (1, 'TecnoPerú Soluciones S.A.C.', '20608765432', 'Av. Garcilaso de la V
 -- Usuarios Semilla (Contraseñas: admin123, vendedor123, almacen123)
 INSERT OR IGNORE INTO usuarios (id, nombre, username, email, password_hash, rol, activo)
 VALUES 
-(1, 'Administrador ERP', 'admin', 'admin@tecnoperu.com', 'pbkdf2:sha256:1000000$V5TyWCO1CQbXuBOH$ad11d792785395148665676f5c7bd4c48fdcac23a9bbca61bb471365c7dc8a8a', 'Administrador', 1),
-(2, 'Vendedor POS', 'vendedor', 'vendedor@tecnoperu.com', 'pbkdf2:sha256:1000000$VOJYuSwgtT7GhnXJ$0d5fe513e96343603ed455289152fc6581a34bad1e78b4c7ed924db67e8e871b', 'Vendedor', 1),
-(3, 'Almacenero ERP', 'almacen', 'almacen@tecnoperu.com', 'pbkdf2:sha256:1000000$EryJF2fh42pGJWgu$e09148e8d38205c8ebe033539685258ae745bb0f9be5aa11058623c5805112b8', 'Almacenero', 1);
+(1, 'Administrador ERP', 'admin', 'admin@tecnoperu.com', 'pbkdf2:sha256:100000$V5TyWCO1CQbXuBOH$ae8369acf10425eb26649d22d073388ff49509f8a1e8fec625256222caa125df', 'Administrador', 1),
+(2, 'Vendedor POS', 'vendedor', 'vendedor@tecnoperu.com', 'pbkdf2:sha256:100000$VOJYuSwgtT7GhnXJ$7470422ee3291917d6a331731fc3a176d8b3a932c75c0e6a15636ec73f83ac1a', 'Vendedor', 1),
+(3, 'Almacenero ERP', 'almacen', 'almacen@tecnoperu.com', 'pbkdf2:sha256:100000$EryJF2fh42pGJWgu$a6312fa38b77e9dc65694da7673fb8371e7b309dd164889080411666cb32d1d5', 'Almacenero', 1);
 
 -- Secuencias del POS
 INSERT OR IGNORE INTO secuencias_comprobante (id, tipo, serie, correlativo_actual)

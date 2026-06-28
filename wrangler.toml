@@ -1,6 +1,7 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "tienda-pos-frontend"
 pages_build_output_dir = "./static"
+compatibility_date = "2026-06-28"
 
 [[d1_databases]]
 binding = "DB"

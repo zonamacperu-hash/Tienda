@@ -7,22 +7,7 @@ export async function onRequestPost(context) {
     const file = formData.get("logo");
 
     if (!file || typeof file === "string" || file.size === 0) {
-      const debugEntries = [];
-      for (const [k, v] of formData.entries()) {
-        debugEntries.push({
-          key: k,
-          type: typeof v,
-          isBlob: v instanceof Blob,
-          constructor: v.constructor.name,
-          size: v ? v.size : null,
-          valueStr: typeof v === "string" ? v.substring(0, 50) : null
-        });
-      }
-      return jsonResponse({
-        exito: false,
-        mensaje: "No se subió ningún archivo o archivo vacío.",
-        debug: debugEntries
-      }, 400);
+      return errorResponse("No se subió ningún archivo o archivo vacío.", 400);
     }
 
     const filename = file.name || "";

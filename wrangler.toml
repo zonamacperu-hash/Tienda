@@ -1,8 +1,3 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "tienda-pos-frontend"
 pages_build_output_dir = "./static"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "tienda-db"
-database_id = "reemplazar-con-tu-d1-database-id"

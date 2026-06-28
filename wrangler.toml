@@ -1,3 +1,0 @@
-#:schema node_modules/wrangler/config-schema.json
-name = "tienda-pos-frontend"
-pages_build_output_dir = "./static"

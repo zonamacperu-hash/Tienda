@@ -42,8 +42,9 @@ async function renderPrestamos(container) {
                                 <th>Tienda Destino</th>
                                 <th>Fecha Envío</th>
                                 <th>Items / Series</th>
+                                <th style="text-align:right;">Precio Pactado</th>
                                 <th>Estado</th>
-                                <th style="text-align:center;">Acciones de Control</th>
+                                <th style="text-align:center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="prestamos-pendientes-body">
@@ -66,6 +67,7 @@ async function renderPrestamos(container) {
                                 <th>Tienda Destino</th>
                                 <th>Fecha Envío</th>
                                 <th>Items / Series</th>
+                                <th style="text-align:right;">Precio Pactado</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
@@ -127,14 +129,17 @@ function renderTablasPrestamos() {
 
     // 1. Pendientes
     if (pendientes.length === 0) {
-        tbodyPendientes.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">No hay préstamos pendientes de cobro o retorno.</td></tr>`;
+        tbodyPendientes.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No hay préstamos pendientes de cobro o retorno.</td></tr>`;
     } else {
         tbodyPendientes.innerHTML = pendientes.map(p => {
             const itemsHtml = p.items.map(item => {
                 const seriesBadge = item.series && item.series.length > 0
                     ? `<div style="font-family:monospace; font-size:0.75rem; color:var(--color-primary); margin-top:2px;">S/N: ${item.series.map(s => `<span class="badge ${s.estado === 'Prestado' ? 'badge-warning' : 'badge-success'}">${s.numero_serie} (${s.estado})</span>`).join(' ')}</div>`
                     : '';
-                
+                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. ${seriesBadge}</div>`;
+            }).join('');
+
+            const preciosHtml = p.items.map(item => {
                 let valorPrecio = item.precio_final;
                 let tipoPrecioTexto = 'Público';
                 if (item.tipo_precio === 'Base') {
@@ -145,8 +150,7 @@ function renderTablasPrestamos() {
                     tipoPrecioTexto = 'Manual';
                 }
                 const precioFormateado = formatCurrency(valorPrecio, item.moneda || 'PEN');
-
-                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. <span style="font-size:0.78rem; font-weight:600; color:var(--color-primary); background:rgba(99,102,241,0.1); padding:2px 6px; border-radius:4px; margin-left:4px; display:inline-block;">${tipoPrecioTexto}: ${precioFormateado}</span> ${seriesBadge}</div>`;
+                return `<div style="font-weight:600; color:var(--color-primary); font-size:0.85rem;">${precioFormateado} <span style="font-size:0.7rem; font-weight:normal; color:var(--text-muted);">(${tipoPrecioTexto})</span></div>`;
             }).join('');
 
             const estadoClass = p.estado === 'Devuelto Parcial' ? 'badge-warning' : 'badge-danger';
@@ -157,6 +161,7 @@ function renderTablasPrestamos() {
                     <td style="font-weight:600;">${p.tienda_destino_nombre}</td>
                     <td style="font-size:0.75rem; color:var(--text-muted);">${formatFecha(p.fecha_prestamo)}</td>
                     <td>${itemsHtml}</td>
+                    <td style="text-align:right; vertical-align:middle;">${preciosHtml}</td>
                     <td><span class="badge ${estadoClass}">${p.estado}</span></td>
                     <td style="text-align:center;">
                         <div style="display:flex; justify-content:center; gap:8px;">
@@ -175,14 +180,17 @@ function renderTablasPrestamos() {
 
     // 2. Historial
     if (historial.length === 0) {
-        tbodyHistorial.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No hay préstamos cerrados en el historial.</td></tr>`;
+        tbodyHistorial.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">No hay préstamos cerrados en el historial.</td></tr>`;
     } else {
         tbodyHistorial.innerHTML = historial.map(p => {
             const itemsHtml = p.items.map(item => {
                 const seriesBadge = item.series && item.series.length > 0
                     ? `<div style="font-family:monospace; font-size:0.75rem; color:var(--color-primary); margin-top:2px;">S/N: ${item.series.map(s => `<span class="badge ${s.estado === 'Vendido' || s.estado === 'En Garantia' ? 'badge-success' : 'badge-secondary'}">${s.numero_serie} (${s.estado})</span>`).join(' ')}</div>`
                     : '';
-                
+                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. ${seriesBadge}</div>`;
+            }).join('');
+
+            const preciosHtml = p.items.map(item => {
                 let valorPrecio = item.precio_final;
                 let tipoPrecioTexto = 'Público';
                 if (item.tipo_precio === 'Base') {
@@ -193,8 +201,7 @@ function renderTablasPrestamos() {
                     tipoPrecioTexto = 'Manual';
                 }
                 const precioFormateado = formatCurrency(valorPrecio, item.moneda || 'PEN');
-
-                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. <span style="font-size:0.78rem; font-weight:600; color:var(--color-primary); background:rgba(99,102,241,0.1); padding:2px 6px; border-radius:4px; margin-left:4px; display:inline-block;">${tipoPrecioTexto}: ${precioFormateado}</span> ${seriesBadge}</div>`;
+                return `<div style="font-weight:600; color:var(--color-primary); font-size:0.85rem;">${precioFormateado} <span style="font-size:0.7rem; font-weight:normal; color:var(--text-muted);">(${tipoPrecioTexto})</span></div>`;
             }).join('');
 
             const estadoClass = p.estado === 'Convertido en Venta' ? 'badge-success' : 'badge-secondary';
@@ -205,11 +212,11 @@ function renderTablasPrestamos() {
                     <td style="font-weight:600;">${p.tienda_destino_nombre}</td>
                     <td style="font-size:0.75rem; color:var(--text-muted);">${formatFecha(p.fecha_prestamo)}</td>
                     <td>${itemsHtml}</td>
+                    <td style="text-align:right; vertical-align:middle;">${preciosHtml}</td>
                     <td><span class="badge ${estadoClass}">${p.estado}</span></td>
                 </tr>
             `;
         }).join('');
-    }
 
     lucide.createIcons();
 }

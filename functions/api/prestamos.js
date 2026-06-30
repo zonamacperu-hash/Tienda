@@ -16,7 +16,7 @@ export async function onRequestGet(context) {
       // Obtener detalles del préstamo
       const detalles = await queryDb(
         env,
-        `SELECT pd.*, prod.nombre as producto_nombre, prod.maneja_series, prod.precio_base, prod.precio_final, prod.moneda
+        `SELECT pd.*, prod.nombre as producto_nombre, prod.maneja_series, prod.precio_base, prod.precio_mayorista, prod.precio_final, prod.moneda
          FROM prestamo_detalles pd
          JOIN productos prod ON pd.producto_id = prod.id
          WHERE pd.prestamo_id = ?`,
@@ -82,11 +82,13 @@ export async function onRequestPost(context) {
       }
 
       // Insert detalle
+      const tipoPrecio = item.tipo_precio || 'Final';
+      const precioManual = parseFloat(item.precio_manual || 0.00);
       statements.push(
         env.DB.prepare(`
-          INSERT INTO prestamo_detalles (prestamo_id, producto_id, cantidad)
-          VALUES (last_insert_rowid(), ?, ?)
-        `).bind(producto_id, cantidad)
+          INSERT INTO prestamo_detalles (prestamo_id, producto_id, cantidad, tipo_precio, precio_manual)
+          VALUES (last_insert_rowid(), ?, ?, ?, ?)
+        `).bind(producto_id, cantidad, tipoPrecio, precioManual)
       );
 
       // Descontar stock

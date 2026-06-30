@@ -17,7 +17,7 @@ export async function onRequestPut(context) {
       env,
       `UPDATE productos 
        SET categoria_id = ?, nombre = ?, descripcion = ?, stock_minimo = ?,
-           precio_base = ?, precio_final = ?, moneda = ?, detalles_tecnicos = ?, updated_at = CURRENT_TIMESTAMP
+           precio_base = ?, precio_mayorista = ?, precio_final = ?, moneda = ?, detalles_tecnicos = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [
         data.categoria_id,
@@ -25,6 +25,7 @@ export async function onRequestPut(context) {
         data.descripcion || "",
         data.stock_minimo || 0,
         data.precio_base || 0.0,
+        data.precio_mayorista || 0.0,
         data.precio_final || 0.0,
         moneda,
         data.detalles_tecnicos || "",

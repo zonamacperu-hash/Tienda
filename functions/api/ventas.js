@@ -107,7 +107,7 @@ export async function onRequestPost(context) {
       // Consultar producto
       const producto = await queryDb(
         env,
-        "SELECT id, nombre, maneja_series, stock_actual, precio_base, precio_final FROM productos WHERE id = ?",
+        "SELECT id, nombre, maneja_series, stock_actual, precio_base, precio_mayorista, precio_final FROM productos WHERE id = ?",
         [producto_id],
         true
       );
@@ -120,6 +120,7 @@ export async function onRequestPost(context) {
       const prodManejaSeries = producto.maneja_series;
       const prodStock = producto.stock_actual;
       const prodPrecioBase = producto.precio_base;
+      const prodPrecioMayorista = producto.precio_mayorista;
       const prodPrecioFinal = producto.precio_final;
 
       // VALIDAR NÚMEROS DE SERIE
@@ -159,7 +160,7 @@ export async function onRequestPost(context) {
       // VALIDAR Y CALCULAR PRECIO UNITARIO
       let precioUnitarioBaseMonedaOriginal = 0.00;
       if (tipoPrecio === "Base") {
-        precioUnitarioBaseMonedaOriginal = prodPrecioBase;
+        precioUnitarioBaseMonedaOriginal = prodPrecioMayorista;
       } else if (tipoPrecio === "Final") {
         precioUnitarioBaseMonedaOriginal = prodPrecioFinal;
       } else if (tipoPrecio === "Manual") {

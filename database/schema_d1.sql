@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS productos (
     stock_minimo INTEGER DEFAULT 0 CHECK (stock_minimo >= 0),
     stock_actual INTEGER DEFAULT 0 CHECK (stock_actual >= 0),
     precio_base REAL NOT NULL DEFAULT 0.00 CHECK (precio_base >= 0),
+    precio_mayorista REAL DEFAULT 0.00 CHECK (precio_mayorista >= 0),
     precio_final REAL NOT NULL DEFAULT 0.00 CHECK (precio_final >= 0),
     moneda TEXT DEFAULT 'PEN' CHECK (moneda IN ('PEN', 'USD')),
     detalles_tecnicos TEXT,

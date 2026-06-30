@@ -583,12 +583,13 @@ class TestERPPOSLogic(unittest.TestCase):
 
         # 2. Insertar un producto nuevo con moneda 'USD'
         execute_db("""
-            INSERT INTO productos (categoria_id, nombre, maneja_series, stock_minimo, stock_actual, precio_base, precio_final, moneda)
-            VALUES (1, 'Macbook Air', 1, 1, 0, 1000.00, 1500.00, 'USD')
+            INSERT INTO productos (categoria_id, nombre, maneja_series, stock_minimo, stock_actual, precio_base, precio_mayorista, precio_final, moneda)
+            VALUES (1, 'Macbook Air', 1, 1, 0, 1000.00, 1200.00, 1500.00, 'USD')
         """)
-        prod_mac = query_db("SELECT moneda, precio_base, precio_final FROM productos WHERE nombre = 'Macbook Air'", one=True)
+        prod_mac = query_db("SELECT moneda, precio_base, precio_mayorista, precio_final FROM productos WHERE nombre = 'Macbook Air'", one=True)
         self.assertEqual(prod_mac['moneda'], 'USD')
         self.assertEqual(prod_mac['precio_base'], 1000.00)
+        self.assertEqual(prod_mac['precio_mayorista'], 1200.00)
         self.assertEqual(prod_mac['precio_final'], 1500.00)
 
         # 3. Intentar insertar un producto con moneda inválida 'EUR' (debe fallar por CHECK constraint de SQLite)
@@ -1096,6 +1097,38 @@ class TestERPPOSLogic(unittest.TestCase):
         # Verificar estado del préstamo: como ya no quedan series 'Prestado', debe cambiar a 'Convertido en Venta'
         prest_final = query_db("SELECT estado FROM prestamos_intertienda WHERE id = ?", [prestamo_id], one=True)
         self.assertEqual(prest_final['estado'], 'Convertido en Venta')
+
+    def test_12_venta_precio_mayorista(self):
+        """Valida que una venta usando tipo_precio 'Base' tome correctamente el valor de precio_mayorista."""
+        # 1. Configurar producto con precio_mayorista
+        execute_db("UPDATE productos SET precio_mayorista = 80.00, stock_actual = 5 WHERE id = 2") # Mouse Logitech
+        
+        # 2. Crear payload de venta para el Mouse con tipo_precio 'Base' (Mayorista)
+        venta_payload = {
+            "cliente_id": 1,
+            "usuario_id": 2,
+            "tipo_comprobante": "Ticket",
+            "moneda": "PEN",
+            "condicion_pago": "Contado",
+            "pagos": [{"metodo_pago": "Efectivo", "monto": 80.00}],
+            "items": [
+                {
+                    "producto_id": 2,
+                    "cantidad": 1,
+                    "tipo_precio": "Base" # Representa Mayorista
+                }
+            ]
+        }
+        
+        # 3. Procesar venta
+        res = procesar_venta_transaccional(venta_payload)
+        self.assertTrue(res['exito'])
+        self.assertEqual(res['total'], 80.00)
+        
+        # 4. Validar el detalle de la venta guardado en base de datos
+        det = query_db("SELECT precio_unitario, subtotal FROM venta_detalles WHERE venta_id = ?", [res['venta_id']], one=True)
+        self.assertEqual(det['precio_unitario'], 80.00)
+        self.assertEqual(det['subtotal'], 80.00)
 
 if __name__ == '__main__':
     unittest.main()

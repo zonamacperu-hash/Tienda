@@ -384,6 +384,7 @@
                     stock_minimo: parseInt(data.stock_minimo || 0),
                     stock_actual: 0,
                     precio_base: parseFloat(data.precio_base || 0.0),
+                    precio_mayorista: parseFloat(data.precio_mayorista || 0.0),
                     precio_final: parseFloat(data.precio_final || 0.0),
                     moneda: data.moneda || 'PEN',
                     detalles_tecnicos: data.detalles_tecnicos || ''
@@ -414,6 +415,7 @@
                     descripcion: data.descripcion || '',
                     stock_minimo: parseInt(data.stock_minimo || 0),
                     precio_base: parseFloat(data.precio_base || 0.0),
+                    precio_mayorista: parseFloat(data.precio_mayorista || 0.0),
                     precio_final: parseFloat(data.precio_final || 0.0),
                     moneda: data.moneda || 'PEN',
                     detalles_tecnicos: data.detalles_tecnicos || ''
@@ -795,7 +797,7 @@
                     
                     let precio_unitario_base = 0.00;
                     if (tipo_precio === "Base") {
-                        precio_unitario_base = prod.precio_base;
+                        precio_unitario_base = prod.precio_mayorista;
                     } else if (tipo_precio === "Final") {
                         precio_unitario_base = prod.precio_final;
                     } else if (tipo_precio === "Manual") {

@@ -256,8 +256,8 @@ def productos():
             prod_id = execute_db(
                 """
                 INSERT INTO productos (
-                    categoria_id, nombre, descripcion, maneja_series, stock_minimo, stock_actual, precio_base, precio_final, moneda, detalles_tecnicos
-                ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+                    categoria_id, nombre, descripcion, maneja_series, stock_minimo, stock_actual, precio_base, precio_mayorista, precio_final, moneda, detalles_tecnicos
+                ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
                 """,
                 (
                     data.get('categoria_id'),
@@ -266,6 +266,7 @@ def productos():
                     1 if data.get('maneja_series') else 0,
                     data.get('stock_minimo', 0),
                     data.get('precio_base', 0.0),
+                    data.get('precio_mayorista', 0.0),
                     data.get('precio_final', 0.0),
                     moneda,
                     data.get('detalles_tecnicos', '')
@@ -288,7 +289,7 @@ def producto_detalle(id):
                 """
                 UPDATE productos 
                 SET categoria_id = ?, nombre = ?, descripcion = ?, stock_minimo = ?,
-                    precio_base = ?, precio_final = ?, moneda = ?, detalles_tecnicos = ?, updated_at = CURRENT_TIMESTAMP
+                    precio_base = ?, precio_mayorista = ?, precio_final = ?, moneda = ?, detalles_tecnicos = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
                 """,
                 (
@@ -297,6 +298,7 @@ def producto_detalle(id):
                     data.get('descripcion', ''),
                     data.get('stock_minimo', 0),
                     data.get('precio_base', 0.0),
+                    data.get('precio_mayorista', 0.0),
                     data.get('precio_final', 0.0),
                     moneda,
                     data.get('detalles_tecnicos', ''),
@@ -860,7 +862,7 @@ def get_prestamos():
     for p in prestamos:
         # Obtener detalles
         detalles = query_db("""
-            SELECT pd.*, prod.nombre as producto_nombre, prod.maneja_series, prod.precio_base, prod.precio_final, prod.moneda
+            SELECT pd.*, prod.nombre as producto_nombre, prod.maneja_series, prod.precio_base, prod.precio_mayorista, prod.precio_final, prod.moneda
             FROM prestamo_detalles pd
             JOIN productos prod ON pd.producto_id = prod.id
             WHERE pd.prestamo_id = ?

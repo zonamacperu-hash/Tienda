@@ -44,13 +44,14 @@ async function renderInventario(container) {
                             <th style="text-align:right;">Stock Min.</th>
                             <th style="text-align:right;">Stock Act.</th>
                             <th style="text-align:right;">Precio Costo</th>
+                            <th style="text-align:right;">Precio Mayorista</th>
                             <th style="text-align:right;">Precio Venta</th>
                             <th style="text-align:center;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="lista-productos-body">
                         <tr>
-                            <td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">
+                            <td colspan="10" style="text-align:center; padding:32px; color:var(--text-muted);">
                                 Cargando catálogo de productos...
                             </td>
                         </tr>
@@ -106,7 +107,7 @@ function renderTablaProductos(productos) {
     if (!tbody) return;
 
     if (productos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">No se encontraron productos registrados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:32px; color:var(--text-muted);">No se encontraron productos registrados.</td></tr>';
         return;
     }
 
@@ -128,6 +129,7 @@ function renderTablaProductos(productos) {
                 <td style="text-align:right;">${p.stock_minimo}</td>
                 <td style="text-align:right;">${stockAlerta}</td>
                 <td style="text-align:right; font-weight:600;">${formatCurrency(p.precio_base, p.moneda || 'PEN')}</td>
+                <td style="text-align:right; font-weight:600; color:var(--color-primary);">${formatCurrency(p.precio_mayorista, p.moneda || 'PEN')}</td>
                 <td style="text-align:right; font-weight:700; color:var(--color-success);">${formatCurrency(p.precio_final, p.moneda || 'PEN')}</td>
                 <td style="text-align:center;">
                     <div style="display:flex; justify-content:center; gap:8px;">
@@ -186,21 +188,27 @@ function abrirModalProducto(productoId = null) {
                 <textarea class="form-textarea" id="prod-descripcion" style="height:60px; min-height:60px;">${isEdit ? prod.descripcion || '' : ''}</textarea>
             </div>
             
-            <div class="form-group">
-                <label class="form-label" for="prod-moneda">Moneda Base</label>
-                <select class="form-select" id="prod-moneda" required>
-                    <option value="PEN" ${isEdit && prod.moneda === 'PEN' ? 'selected' : (!isEdit ? 'selected' : '')}>Soles (PEN)</option>
-                    <option value="USD" ${isEdit && prod.moneda === 'USD' ? 'selected' : ''}>Dólares (USD)</option>
-                </select>
-            </div>
-            
-            <div class="form-row">
+            <div class="form-grid-2">
                 <div class="form-group">
-                    <label class="form-label" for="prod-precio-costo">Precio Costo / Mayorista (S/)</label>
-                    <input type="number" step="0.01" min="0" class="form-input" id="prod-precio-costo" value="${isEdit ? prod.precio_base : 0.00}" required>
+                    <label class="form-label" for="prod-moneda">Moneda Base</label>
+                    <select class="form-select" id="prod-moneda" required>
+                        <option value="PEN" ${isEdit && prod.moneda === 'PEN' ? 'selected' : (!isEdit ? 'selected' : '')}>Soles (PEN)</option>
+                        <option value="USD" ${isEdit && prod.moneda === 'USD' ? 'selected' : ''}>Dólares (USD)</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="prod-precio-venta">Precio Cliente Final (S/)</label>
+                    <label class="form-label" for="prod-precio-costo">Precio Costo (S/)</label>
+                    <input type="number" step="0.01" min="0" class="form-input" id="prod-precio-costo" value="${isEdit ? prod.precio_base : 0.00}" required>
+                </div>
+            </div>
+            
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label" for="prod-precio-mayorista">Precio Mayorista (S/)</label>
+                    <input type="number" step="0.01" min="0" class="form-input" id="prod-precio-mayorista" value="${isEdit ? prod.precio_mayorista : 0.00}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="prod-precio-venta">Precio Público (S/)</label>
                     <input type="number" step="0.01" min="0" class="form-input" id="prod-precio-venta" value="${isEdit ? prod.precio_final : 0.00}" required>
                 </div>
             </div>
@@ -232,12 +240,14 @@ function abrirModalProducto(productoId = null) {
     // Evento para actualizar dinámicamente los prefijos de moneda (S/ o $)
     const selectMoneda = document.getElementById('prod-moneda');
     const labelCosto = document.querySelector('label[for="prod-precio-costo"]');
+    const labelMayorista = document.querySelector('label[for="prod-precio-mayorista"]');
     const labelVenta = document.querySelector('label[for="prod-precio-venta"]');
-    if (selectMoneda && labelCosto && labelVenta) {
+    if (selectMoneda && labelCosto && labelMayorista && labelVenta) {
         const updateLabels = () => {
             const symbol = selectMoneda.value === 'USD' ? '$' : 'S/';
-            labelCosto.textContent = `Precio Costo / Mayorista (${symbol})`;
-            labelVenta.textContent = `Precio Cliente Final (${symbol})`;
+            labelCosto.textContent = `Precio Costo (${symbol})`;
+            labelMayorista.textContent = `Precio Mayorista (${symbol})`;
+            labelVenta.textContent = `Precio Público (${symbol})`;
         };
         selectMoneda.addEventListener('change', updateLabels);
         updateLabels();
@@ -256,6 +266,7 @@ function abrirModalProducto(productoId = null) {
             categoria_id: parseInt(document.getElementById('prod-categoria').value),
             descripcion: document.getElementById('prod-descripcion').value,
             precio_base: parseFloat(document.getElementById('prod-precio-costo').value),
+            precio_mayorista: parseFloat(document.getElementById('prod-precio-mayorista').value),
             precio_final: parseFloat(document.getElementById('prod-precio-venta').value),
             moneda: document.getElementById('prod-moneda').value,
             stock_minimo: parseInt(document.getElementById('prod-stock-minimo').value),
@@ -477,6 +488,7 @@ function exportarInventarioExcel() {
             "Stock Actual": p.stock_actual,
             "Moneda Base": p.moneda || "PEN",
             "Precio Costo": p.precio_base,
+            "Precio Mayorista": p.precio_mayorista,
             "Precio Venta": p.precio_final,
             "Valor de Almacén": p.precio_base * p.stock_actual
         }));
@@ -485,7 +497,7 @@ function exportarInventarioExcel() {
         const ws = XLSX.utils.json_to_sheet(dataExport);
 
         // Ajustar anchos de columnas
-        const max_len = [12, 24, 32, 32, 16, 12, 12, 12, 16, 16, 20];
+        const max_len = [12, 24, 32, 32, 16, 12, 12, 12, 16, 16, 16, 20];
         ws['!cols'] = max_len.map(w => ({ wch: w }));
 
         XLSX.utils.book_append_sheet(wb, ws, "Inventario de Stock");

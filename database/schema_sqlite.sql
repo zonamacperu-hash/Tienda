@@ -59,7 +59,8 @@ CREATE TABLE IF NOT EXISTS productos (
     maneja_series INTEGER DEFAULT 0 NOT NULL CHECK (maneja_series IN (0, 1)), -- 0=Falso, 1=Verdadero
     stock_minimo INTEGER DEFAULT 0 CHECK (stock_minimo >= 0),
     stock_actual INTEGER DEFAULT 0 CHECK (stock_actual >= 0),
-    precio_base REAL NOT NULL DEFAULT 0.00 CHECK (precio_base >= 0), -- Costo / Mayorista
+    precio_base REAL NOT NULL DEFAULT 0.00 CHECK (precio_base >= 0), -- Costo
+    precio_mayorista REAL NOT NULL DEFAULT 0.00 CHECK (precio_mayorista >= 0), -- Mayorista
     precio_final REAL NOT NULL DEFAULT 0.00 CHECK (precio_final >= 0), -- Precio al cliente final
     moneda TEXT DEFAULT 'PEN' CHECK (moneda IN ('PEN', 'USD')), -- Moneda base del producto
     detalles_tecnicos TEXT, -- Especificaciones del modelo

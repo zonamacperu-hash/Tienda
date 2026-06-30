@@ -103,14 +103,14 @@ def procesar_venta_transaccional(datos_venta):
             # Consultar y bloquear producto (SQLite no bloquea filas individuales con FOR UPDATE, 
             # pero la transacción atómica a nivel de conexión asegura exclusión mutua durante el COMMIT).
             producto = cursor.execute(
-                "SELECT id, nombre, maneja_series, stock_actual, precio_base, precio_final FROM productos WHERE id = ?",
+                "SELECT id, nombre, maneja_series, stock_actual, precio_base, precio_mayorista, precio_final FROM productos WHERE id = ?",
                 (producto_id,)
             ).fetchone()
             
             if not producto:
                 raise ValueError(f"El producto con ID {producto_id} no existe.")
             
-            prod_id, prod_nombre, prod_maneja_series, prod_stock, prod_precio_base, prod_precio_final = producto
+            prod_id, prod_nombre, prod_maneja_series, prod_stock, prod_precio_base, prod_precio_mayorista, prod_precio_final = producto
 
             # A. VALIDAR NÚMEROS DE SERIE
             if prod_maneja_series == 1:
@@ -154,7 +154,7 @@ def procesar_venta_transaccional(datos_venta):
             precio_unitario_base_moneda_original = 0.00
             
             if tipo_precio == "Base":
-                precio_unitario_base_moneda_original = prod_precio_base
+                precio_unitario_base_moneda_original = prod_precio_mayorista
             elif tipo_precio == "Final":
                 precio_unitario_base_moneda_original = prod_precio_final
             elif tipo_precio == "Manual":

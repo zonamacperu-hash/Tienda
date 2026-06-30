@@ -240,6 +240,7 @@ function agregarAlCarritoPOS(productoId) {
             precio_manual: prod.precio_final,
             precio_manual_raw: '',
             precio_base: prod.precio_base,
+            precio_mayorista: prod.precio_mayorista,
             precio_final: prod.precio_final,
             moneda: prod.moneda || 'PEN',
             maneja_series: prod.maneja_series,
@@ -276,7 +277,7 @@ function renderCarritoPOS() {
 
     container.innerHTML = carritoPOS.map((item, index) => {
         let precioOrigen = item.precio_final;
-        if (item.tipo_precio === 'Base') precioOrigen = item.precio_base;
+        if (item.tipo_precio === 'Base') precioOrigen = item.precio_mayorista;
         else if (item.tipo_precio === 'Manual') precioOrigen = item.precio_manual;
 
         // Convertir precio si la moneda de la transacción difiere de la del producto
@@ -503,7 +504,7 @@ function actualizarTotalesPOS() {
     let subtotalTotal = 0.0;
     carritoPOS.forEach(item => {
         let precio = item.precio_final;
-        if (item.tipo_precio === 'Base') precio = item.precio_base;
+        if (item.tipo_precio === 'Base') precio = item.precio_mayorista;
         else if (item.tipo_precio === 'Manual') precio = item.precio_manual;
 
         const monedaProd = item.moneda || 'PEN';
@@ -1162,7 +1163,7 @@ function obtenerTotalCarrito() {
     let subtotalTotal = 0.0;
     carritoPOS.forEach(item => {
         let precio = item.precio_final;
-        if (item.tipo_precio === 'Base') precio = item.precio_base;
+        if (item.tipo_precio === 'Base') precio = item.precio_mayorista;
         else if (item.tipo_precio === 'Manual') precio = item.precio_manual;
 
         const monedaProd = item.moneda || 'PEN';
@@ -1442,7 +1443,7 @@ function renderCheckoutPrestamoItems() {
             : '';
             
         const priceFinalFormatted = formatCurrency(item.precio_final, item.moneda || 'PEN');
-        const priceBaseFormatted = formatCurrency(item.precio_base, item.moneda || 'PEN');
+        const priceBaseFormatted = formatCurrency(item.precio_mayorista, item.moneda || 'PEN');
         
         return `
             <div class="checkout-item-row" style="display:flex; flex-direction:column; gap:6px; padding-bottom:8px; border-bottom:1px solid var(--border-color);">
@@ -1450,7 +1451,7 @@ function renderCheckoutPrestamoItems() {
                 <div style="display:flex; gap:8px; align-items:center;">
                     <select class="form-select" style="height:32px; font-size:0.8rem; padding:0 8px; flex-grow:1;" onchange="cambiarPrecioItemCheckout(${idx}, this.value)">
                         <option value="Final" ${item.tipo_precio === 'Final' ? 'selected' : ''}>P. Final (${priceFinalFormatted})</option>
-                        <option value="Base" ${item.tipo_precio === 'Base' ? 'selected' : ''}>P. Base (${priceBaseFormatted})</option>
+                        <option value="Base" ${item.tipo_precio === 'Base' ? 'selected' : ''}>P. Mayorista (${priceBaseFormatted})</option>
                         <option value="Manual" ${item.tipo_precio === 'Manual' ? 'selected' : ''}>P. Manual</option>
                     </select>
                     <input type="number" step="0.01" min="0" id="checkout-manual-price-input-${idx}" class="form-input" style="height:32px; width:100px; font-size:0.8rem; padding:0 8px; text-align:right; display: ${item.tipo_precio === 'Manual' ? 'block' : 'none'};" placeholder="Precio..." value="${item.precio_manual || ''}" oninput="actualizarPrecioManualItemCheckout(${idx}, this.value)">

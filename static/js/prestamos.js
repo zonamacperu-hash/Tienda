@@ -424,6 +424,7 @@ window.convertirPrestamoAVenta = async function(prestamoId) {
                 cantidad: item.cantidad,
                 maneja_series: item.maneja_series,
                 precio_base: item.precio_base,
+                precio_mayorista: item.precio_mayorista,
                 precio_final: item.precio_final,
                 moneda: item.moneda || 'PEN',
                 series_seleccionadas: seriesSeleccionadas,

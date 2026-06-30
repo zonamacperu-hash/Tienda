@@ -21,117 +21,64 @@ async function renderPrestamos(container) {
 
     // 2. Renderizar Estructura de la Vista (Diseño Premium Glassmorphism)
     container.innerHTML = `
-        <div style="display:grid; grid-template-columns: 1fr 2fr; gap:24px; align-items:start;">
-            <!-- Panel Izquierdo: Registrar Préstamo -->
+        <div class="view-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+            <h2 class="view-title" style="margin:0;">Préstamos Intertiendas</h2>
+            <button class="btn btn-primary" onclick="abrirModalRegistrarPrestamo()">
+                <i data-lucide="plus-circle" style="width:18px; height:18px; display:inline-block; vertical-align:middle; margin-right:6px;"></i>Registrar Nueva Salida
+            </button>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:24px;">
+            <!-- Préstamos Pendientes -->
             <div class="card" style="padding:24px;">
-                <h3 style="font-size:1.1rem; font-weight:700; color:var(--color-primary); border-bottom:1px solid var(--border-color); padding-bottom:10px; margin-top:0; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
-                    <i data-lucide="arrow-up-right" style="width:20px; height:20px;"></i>Registrar Nueva Salida
+                <h3 style="font-size:1.1rem; font-weight:700; color:var(--color-warning); border-bottom:1px solid var(--border-color); padding-bottom:10px; margin-top:0; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="clock" style="width:20px; height:20px;"></i>Préstamos Pendientes
                 </h3>
-                
-                <form id="form-registrar-prestamo" style="display:flex; flex-direction:column; gap:16px;">
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label" for="prestamo-tienda">Tienda Aliada (Socio Comercial)</label>
-                        <select class="form-select" id="prestamo-tienda" required style="width:100%;">
-                            <option value="">Seleccione Tienda Destino...</option>
-                            ${prestamoClientesDisponibles.map(c => `
-                                <option value="${c.id}">${c.nombre_razon_social} (${c.documento_identidad})</option>
-                            `).join('')}
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label" for="prestamo-producto">Producto a Enviar</label>
-                        <select class="form-select" id="prestamo-producto" required style="width:100%;">
-                            <option value="">Seleccione Producto...</option>
-                            ${prestamoProductosDisponibles.map(p => `
-                                <option value="${p.id}" data-series="${p.maneja_series}" data-stock="${p.stock_actual}">
-                                    ${p.nombre} (Stock: ${p.stock_actual})
-                                </option>
-                            `).join('')}
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label" for="prestamo-cantidad">Cantidad a Prestar</label>
-                        <input type="number" min="1" class="form-input" id="prestamo-cantidad" value="1" required style="width:100%;">
-                    </div>
-
-                    <!-- Selector de series físicas (Sólo si maneja_series = 1) -->
-                    <div id="prestamo-series-section" style="display:none; flex-direction:column; gap:8px; background:rgba(0,0,0,0.15); padding:14px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
-                        <span style="font-size:0.8rem; font-weight:600; color:var(--color-warning);">Seleccione Números de Serie:</span>
-                        <div id="prestamo-series-count" style="font-size:0.75rem; color:var(--text-muted);">
-                            Seleccionadas: <span id="prestamo-series-sel-qty" style="color:var(--color-success); font-weight:bold;">0</span> de <span id="prestamo-series-req-qty" style="font-weight:bold;">1</span>
-                        </div>
-                        <div class="series-grid" id="prestamo-series-container" style="display:flex; flex-wrap:wrap; gap:6px; max-height:120px; overflow-y:auto; padding:2px;">
-                            <!-- Chips inyectados -->
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label" for="prestamo-observaciones">Observaciones / Motivo</label>
-                        <textarea class="form-textarea" id="prestamo-observaciones" placeholder="Ej: Préstamo para exhibición por 5 días..." style="width:100%; height:70px; resize:none;"></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" style="width:100%; padding:12px; margin-top:8px;">
-                        <i data-lucide="check-circle" style="width:16px; height:16px; display:inline-block; vertical-align:middle; margin-right:6px;"></i>Confirmar Salida Temporal
-                    </button>
-                </form>
+                <div style="overflow-x:auto;">
+                    <table class="table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tienda Destino</th>
+                                <th>Fecha Envío</th>
+                                <th>Items / Series</th>
+                                <th>Estado</th>
+                                <th style="text-align:center;">Acciones de Control</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prestamos-pendientes-body">
+                            <!-- Filas inyectadas -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- Panel Derecho: Listado de Préstamos -->
-            <div style="display:flex; flex-direction:column; gap:24px;">
-                <!-- Préstamos Pendientes -->
-                <div class="card" style="padding:24px;">
-                    <h3 style="font-size:1.1rem; font-weight:700; color:var(--color-warning); border-bottom:1px solid var(--border-color); padding-bottom:10px; margin-top:0; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
-                        <i data-lucide="clock" style="width:20px; height:20px;"></i>Préstamos Pendientes
-                    </h3>
-                    <div style="overflow-x:auto;">
-                        <table class="table" style="width:100%;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Tienda Destino</th>
-                                    <th>Fecha Envío</th>
-                                    <th>Items / Series</th>
-                                    <th>Estado</th>
-                                    <th style="text-align:center;">Acciones de Control</th>
-                                </tr>
-                            </thead>
-                            <tbody id="prestamos-pendientes-body">
-                                <!-- Filas inyectadas -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Historial de Préstamos Cerrados -->
-                <div class="card" style="padding:24px;">
-                    <h3 style="font-size:1.1rem; font-weight:700; color:var(--color-success); border-bottom:1px solid var(--border-color); padding-bottom:10px; margin-top:0; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
-                        <i data-lucide="archive" style="width:20px; height:20px;"></i>Historial de Préstamos Cerrados
-                    </h3>
-                    <div style="overflow-x:auto;">
-                        <table class="table" style="width:100%;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Tienda Destino</th>
-                                    <th>Fecha Envío</th>
-                                    <th>Items / Series</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody id="prestamos-historial-body">
-                                <!-- Filas inyectadas -->
-                            </tbody>
-                        </table>
-                    </div>
+            <!-- Historial de Préstamos Cerrados -->
+            <div class="card" style="padding:24px;">
+                <h3 style="font-size:1.1rem; font-weight:700; color:var(--color-success); border-bottom:1px solid var(--border-color); padding-bottom:10px; margin-top:0; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="archive" style="width:20px; height:20px;"></i>Historial de Préstamos Cerrados
+                </h3>
+                <div style="overflow-x:auto;">
+                    <table class="table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tienda Destino</th>
+                                <th>Fecha Envío</th>
+                                <th>Items / Series</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prestamos-historial-body">
+                            <!-- Filas inyectadas -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     `;
 
     lucide.createIcons();
-    inicializarEventosPrestamos();
     renderTablasPrestamos();
 }
 
@@ -246,6 +193,67 @@ function renderTablasPrestamos() {
 /* ==============================================================================
    LOGICA DEL FORMULARIO Y SELECTOR DE SERIES
    ============================================================================== */
+function abrirModalRegistrarPrestamo() {
+    prestamoSeriesSeleccionadas = [];
+    prestamoProductoActivoManejaSeries = false;
+    prestamoProductoActivoId = null;
+
+    const bodyHtml = `
+        <form id="form-registrar-prestamo" style="display:flex; flex-direction:column; gap:16px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" for="prestamo-tienda">Tienda Aliada (Socio Comercial)</label>
+                <select class="form-select" id="prestamo-tienda" required style="width:100%;">
+                    <option value="">Seleccione Tienda Destino...</option>
+                    ${prestamoClientesDisponibles.map(c => `
+                        <option value="${c.id}">${c.nombre_razon_social} (${c.documento_identidad})</option>
+                    `).join('')}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" for="prestamo-producto">Producto a Enviar</label>
+                <select class="form-select" id="prestamo-producto" required style="width:100%;">
+                    <option value="">Seleccione Producto...</option>
+                    ${prestamoProductosDisponibles.map(p => `
+                        <option value="${p.id}" data-series="${p.maneja_series}" data-stock="${p.stock_actual}">
+                            ${p.nombre} (Stock: ${p.stock_actual})
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" for="prestamo-cantidad">Cantidad a Prestar</label>
+                <input type="number" min="1" class="form-input" id="prestamo-cantidad" value="1" required style="width:100%;">
+            </div>
+
+            <!-- Selector de series físicas (Sólo si maneja_series = 1) -->
+            <div id="prestamo-series-section" style="display:none; flex-direction:column; gap:8px; background:rgba(0,0,0,0.15); padding:14px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                <span style="font-size:0.8rem; font-weight:600; color:var(--color-warning);">Seleccione Números de Serie:</span>
+                <div id="prestamo-series-count" style="font-size:0.75rem; color:var(--text-muted);">
+                    Seleccionadas: <span id="prestamo-series-sel-qty" style="color:var(--color-success); font-weight:bold;">0</span> de <span id="prestamo-series-req-qty" style="font-weight:bold;">1</span>
+                </div>
+                <div class="series-grid" id="prestamo-series-container" style="display:flex; flex-wrap:wrap; gap:6px; max-height:120px; overflow-y:auto; padding:2px;">
+                    <!-- Chips inyectados -->
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" for="prestamo-observaciones">Observaciones / Motivo</label>
+                <textarea class="form-textarea" id="prestamo-observaciones" placeholder="Ej: Préstamo para exhibición por 5 días..." style="width:100%; height:70px; resize:none;"></textarea>
+            </div>
+        </form>
+    `;
+
+    const footerHtml = `
+        <button class="btn btn-outline" onclick="closeModal('global-modal')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-confirmar-prestamo-modal">Confirmar Salida Temporal</button>
+    `;
+
+    setupGlobalModal("Registrar Nueva Salida", bodyHtml, footerHtml);
+    inicializarEventosPrestamos();
+}
+
 function inicializarEventosPrestamos() {
     const selectProd = document.getElementById('prestamo-producto');
     const inputCant = document.getElementById('prestamo-cantidad');
@@ -319,6 +327,7 @@ function inicializarEventosPrestamos() {
 
                 if (data.exito) {
                     mostrarToast(data.mensaje, "success");
+                    closeModal('global-modal');
                     // Recargar vista
                     await renderPrestamos(document.getElementById('main-view'));
                 } else {
@@ -327,6 +336,20 @@ function inicializarEventosPrestamos() {
             } catch (err) {
                 console.error(err);
                 mostrarToast("Error de conexión al guardar préstamo.", "danger");
+            }
+        });
+    }
+
+    const btnConfirm = document.getElementById('btn-confirmar-prestamo-modal');
+    if (btnConfirm) {
+        btnConfirm.addEventListener('click', () => {
+            const form = document.getElementById('form-registrar-prestamo');
+            if (form) {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.dispatchEvent(new Event('submit', { cancelable: true }));
+                }
             }
         });
     }

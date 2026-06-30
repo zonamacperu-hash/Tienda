@@ -217,6 +217,7 @@ function renderTablasPrestamos() {
                 </tr>
             `;
         }).join('');
+    }
 
     lucide.createIcons();
 }

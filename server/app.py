@@ -922,10 +922,12 @@ def registrar_prestamo():
                     raise ValueError(f"Stock insuficiente para el producto '{prod_name}'. Stock actual: {stock_actual}, Solicitado: {cantidad}")
                     
                 # Insertar detalle
+                tipo_precio = item.get('tipo_precio', 'Final')
+                precio_manual = float(item.get('precio_manual', 0.0))
                 cursor.execute("""
-                    INSERT INTO prestamo_detalles (prestamo_id, producto_id, cantidad)
-                    VALUES (?, ?, ?)
-                """, (prestamo_id, producto_id, cantidad))
+                    INSERT INTO prestamo_detalles (prestamo_id, producto_id, cantidad, tipo_precio, precio_manual)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (prestamo_id, producto_id, cantidad, tipo_precio, precio_manual))
                 
                 # Descontar stock
                 cursor.execute(

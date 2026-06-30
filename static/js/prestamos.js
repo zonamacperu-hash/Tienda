@@ -215,16 +215,31 @@ function abrirModalRegistrarPrestamo() {
                 <select class="form-select" id="prestamo-producto" required style="width:100%;">
                     <option value="">Seleccione Producto...</option>
                     ${prestamoProductosDisponibles.map(p => `
-                        <option value="${p.id}" data-series="${p.maneja_series}" data-stock="${p.stock_actual}">
+                        <option value="${p.id}" data-series="${p.maneja_series}" data-stock="${p.stock_actual}" data-moneda="${p.moneda || 'PEN'}">
                             ${p.nombre} (Stock: ${p.stock_actual})
                         </option>
                     `).join('')}
                 </select>
             </div>
 
-            <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" for="prestamo-cantidad">Cantidad a Prestar</label>
-                <input type="number" min="1" class="form-input" id="prestamo-cantidad" value="1" required style="width:100%;">
+            <div class="form-grid-2">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="prestamo-cantidad">Cantidad a Prestar</label>
+                    <input type="number" min="1" class="form-input" id="prestamo-cantidad" value="1" required style="width:100%;">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="prestamo-tipo-precio">Seleccionar Precio</label>
+                    <select class="form-select" id="prestamo-tipo-precio" required style="width:100%;">
+                        <option value="Final">Público</option>
+                        <option value="Base">Mayorista</option>
+                        <option value="Manual">Manual</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" id="prestamo-precio-manual-group" style="display:none; margin-bottom:0;">
+                <label class="form-label" for="prestamo-precio-manual">Precio Manual (S/)</label>
+                <input type="number" step="0.01" min="0" class="form-input" id="prestamo-precio-manual" value="0.00" style="width:100%;">
             </div>
 
             <!-- Selector de series físicas (Sólo si maneja_series = 1) -->
@@ -257,6 +272,8 @@ function abrirModalRegistrarPrestamo() {
 function inicializarEventosPrestamos() {
     const selectProd = document.getElementById('prestamo-producto');
     const inputCant = document.getElementById('prestamo-cantidad');
+    const selectTipoPrecio = document.getElementById('prestamo-tipo-precio');
+    const groupPrecioManual = document.getElementById('prestamo-precio-manual-group');
 
     if (selectProd) {
         selectProd.addEventListener('change', async (e) => {
@@ -270,6 +287,14 @@ function inicializarEventosPrestamos() {
 
             prestamoProductoActivoId = parseInt(e.target.value);
             prestamoProductoActivoManejaSeries = selectedOpt.getAttribute('data-series') === '1';
+
+            // Actualizar símbolo de moneda en el campo manual
+            const moneda = selectedOpt.getAttribute('data-moneda') || 'PEN';
+            const symbol = moneda === 'USD' ? '$' : 'S/';
+            const labelPrecioManual = document.querySelector('label[for="prestamo-precio-manual"]');
+            if (labelPrecioManual) {
+                labelPrecioManual.textContent = `Precio Manual (${symbol})`;
+            }
 
             if (prestamoProductoActivoManejaSeries) {
                 document.getElementById('prestamo-series-section').style.display = 'flex';
@@ -288,6 +313,16 @@ function inicializarEventosPrestamos() {
         });
     }
 
+    if (selectTipoPrecio && groupPrecioManual) {
+        selectTipoPrecio.addEventListener('change', (e) => {
+            if (e.target.value === 'Manual') {
+                groupPrecioManual.style.display = 'flex';
+            } else {
+                groupPrecioManual.style.display = 'none';
+            }
+        });
+    }
+
     // Registrar préstamo submit
     const form = document.getElementById('form-registrar-prestamo');
     if (form) {
@@ -298,6 +333,8 @@ function inicializarEventosPrestamos() {
             const productoId = parseInt(document.getElementById('prestamo-producto').value);
             const cantidad = parseInt(document.getElementById('prestamo-cantidad').value);
             const observaciones = document.getElementById('prestamo-observaciones').value.trim();
+            const tipoPrecio = document.getElementById('prestamo-tipo-precio').value;
+            const precioManual = tipoPrecio === 'Manual' ? parseFloat(document.getElementById('prestamo-precio-manual').value || 0) : 0.00;
 
             if (prestamoProductoActivoManejaSeries && prestamoSeriesSeleccionadas.length !== cantidad) {
                 mostrarToast(`Debe seleccionar exactamente ${cantidad} series físicas para el préstamo.`, "warning");
@@ -312,6 +349,8 @@ function inicializarEventosPrestamos() {
                     {
                         producto_id: productoId,
                         cantidad: cantidad,
+                        tipo_precio: tipoPrecio,
+                        precio_manual: precioManual,
                         series: prestamoProductoActivoManejaSeries ? prestamoSeriesSeleccionadas : []
                     }
                 ]

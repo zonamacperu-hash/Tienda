@@ -333,7 +333,9 @@ CREATE TABLE prestamo_detalles (
     id SERIAL PRIMARY KEY,
     prestamo_id INT NOT NULL REFERENCES prestamos_intertienda(id) ON DELETE CASCADE,
     producto_id INT NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
-    cantidad INT NOT NULL CHECK (cantidad > 0)
+    cantidad INT NOT NULL CHECK (cantidad > 0),
+    tipo_precio VARCHAR(15) NOT NULL DEFAULT 'Final' CHECK (tipo_precio IN ('Base', 'Final', 'Manual')),
+    precio_manual DECIMAL(12, 2) DEFAULT 0.00 CHECK (precio_manual >= 0)
 );
 
 CREATE INDEX idx_prestamos_intertienda_tienda ON prestamos_intertienda(tienda_destino_id);

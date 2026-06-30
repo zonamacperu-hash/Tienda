@@ -1002,6 +1002,8 @@ class TestERPPOSLogic(unittest.TestCase):
                 {
                     "producto_id": 1,
                     "cantidad": 2,
+                    "tipo_precio": "Manual",
+                    "precio_manual": 3800.00,
                     "series": ["SN-PREST-01", "SN-PREST-02"]
                 }
             ]
@@ -1011,6 +1013,11 @@ class TestERPPOSLogic(unittest.TestCase):
         data = res.get_json()
         self.assertTrue(data['exito'])
         prestamo_id = data['prestamo_id']
+        
+        # Verificar detalles guardados
+        det_prestamo = query_db("SELECT tipo_precio, precio_manual FROM prestamo_detalles WHERE prestamo_id = ?", [prestamo_id], one=True)
+        self.assertEqual(det_prestamo['tipo_precio'], 'Manual')
+        self.assertEqual(det_prestamo['precio_manual'], 3800.00)
         
         # Verificar stock descontado
         p1 = query_db("SELECT stock_actual FROM productos WHERE id = 1", one=True)

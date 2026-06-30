@@ -134,7 +134,19 @@ function renderTablasPrestamos() {
                 const seriesBadge = item.series && item.series.length > 0
                     ? `<div style="font-family:monospace; font-size:0.75rem; color:var(--color-primary); margin-top:2px;">S/N: ${item.series.map(s => `<span class="badge ${s.estado === 'Prestado' ? 'badge-warning' : 'badge-success'}">${s.numero_serie} (${s.estado})</span>`).join(' ')}</div>`
                     : '';
-                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. ${seriesBadge}</div>`;
+                
+                let valorPrecio = item.precio_final;
+                let tipoPrecioTexto = 'Público';
+                if (item.tipo_precio === 'Base') {
+                    valorPrecio = item.precio_mayorista;
+                    tipoPrecioTexto = 'Mayorista';
+                } else if (item.tipo_precio === 'Manual') {
+                    valorPrecio = item.precio_manual;
+                    tipoPrecioTexto = 'Manual';
+                }
+                const precioFormateado = formatCurrency(valorPrecio, item.moneda || 'PEN');
+
+                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. <span style="font-size:0.78rem; font-weight:600; color:var(--color-primary); background:rgba(99,102,241,0.1); padding:2px 6px; border-radius:4px; margin-left:4px; display:inline-block;">${tipoPrecioTexto}: ${precioFormateado}</span> ${seriesBadge}</div>`;
             }).join('');
 
             const estadoClass = p.estado === 'Devuelto Parcial' ? 'badge-warning' : 'badge-danger';
@@ -148,11 +160,11 @@ function renderTablasPrestamos() {
                     <td><span class="badge ${estadoClass}">${p.estado}</span></td>
                     <td style="text-align:center;">
                         <div style="display:flex; justify-content:center; gap:8px;">
-                            <button class="btn btn-primary btn-sm" onclick="convertirPrestamoAVenta(${p.id})" style="font-size:0.75rem; padding:6px 10px;">
-                                <i data-lucide="shopping-cart" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px;"></i>Convertir en Venta
+                            <button class="btn btn-primary btn-icon btn-sm" onclick="convertirPrestamoAVenta(${p.id})" title="Convertir en Venta" style="width:32px; height:32px; border-radius:8px; padding:0; display:inline-flex; align-items:center; justify-content:center;">
+                                <i data-lucide="shopping-cart" style="width:14px; height:14px;"></i>
                             </button>
-                            <button class="btn btn-success btn-sm" onclick="abrirDevolucionModal(${p.id})" style="font-size:0.75rem; padding:6px 10px; border-color:var(--color-success); background-color:transparent; color:var(--color-success);">
-                                <i data-lucide="arrow-down-left" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px;"></i>Retorno Equipo
+                            <button class="btn btn-outline btn-icon btn-sm" onclick="abrirDevolucionModal(${p.id})" title="Retorno Equipo" style="border-color:var(--color-success); color:var(--color-success); width:32px; height:32px; border-radius:8px; padding:0; display:inline-flex; align-items:center; justify-content:center;">
+                                <i data-lucide="arrow-down-left" style="width:14px; height:14px;"></i>
                             </button>
                         </div>
                     </td>
@@ -170,7 +182,19 @@ function renderTablasPrestamos() {
                 const seriesBadge = item.series && item.series.length > 0
                     ? `<div style="font-family:monospace; font-size:0.75rem; color:var(--color-primary); margin-top:2px;">S/N: ${item.series.map(s => `<span class="badge ${s.estado === 'Vendido' || s.estado === 'En Garantia' ? 'badge-success' : 'badge-secondary'}">${s.numero_serie} (${s.estado})</span>`).join(' ')}</div>`
                     : '';
-                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. ${seriesBadge}</div>`;
+                
+                let valorPrecio = item.precio_final;
+                let tipoPrecioTexto = 'Público';
+                if (item.tipo_precio === 'Base') {
+                    valorPrecio = item.precio_mayorista;
+                    tipoPrecioTexto = 'Mayorista';
+                } else if (item.tipo_precio === 'Manual') {
+                    valorPrecio = item.precio_manual;
+                    tipoPrecioTexto = 'Manual';
+                }
+                const precioFormateado = formatCurrency(valorPrecio, item.moneda || 'PEN');
+
+                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. <span style="font-size:0.78rem; font-weight:600; color:var(--color-primary); background:rgba(99,102,241,0.1); padding:2px 6px; border-radius:4px; margin-left:4px; display:inline-block;">${tipoPrecioTexto}: ${precioFormateado}</span> ${seriesBadge}</div>`;
             }).join('');
 
             const estadoClass = p.estado === 'Convertido en Venta' ? 'badge-success' : 'badge-secondary';

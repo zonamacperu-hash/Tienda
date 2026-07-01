@@ -1075,7 +1075,7 @@ function validarPagosCombinados() {
     if (!condicionPagoSelect) return true;
     
     const condicionPago = condicionPagoSelect.value;
-    const checkoutBtn = document.querySelector('.checkout-btn');
+    const checkoutBtn = document.querySelector('#pos-checkout-modal .checkout-btn');
     const container = document.getElementById('pos-pagos-combinados-container');
     
     if (condicionPago === 'Credito') {

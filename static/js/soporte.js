@@ -1036,19 +1036,13 @@ async function imprimirOrdenIngresoPDF(ordenId) {
                 scrollY: 0,
                 windowWidth: 800,
                 onclone: (clonedDoc) => {
-                    const printWrapper = clonedDoc.getElementById('print-wrapper-soporte-ingreso');
-                    if (printWrapper) {
-                        Array.from(clonedDoc.body.children).forEach(child => {
-                            if (child !== printWrapper) {
-                                child.style.setProperty('display', 'none', 'important');
-                            }
-                        });
-                        printWrapper.style.position = 'absolute';
-                        printWrapper.style.left = '0';
-                        printWrapper.style.top = '0';
-                        printWrapper.style.margin = '0';
-                        printWrapper.style.padding = '0';
-                    }
+                    const sidebar = clonedDoc.querySelector('.sidebar');
+                    if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
+                    const topHeader = clonedDoc.querySelector('.top-header');
+                    if (topHeader) topHeader.style.setProperty('display', 'none', 'important');
+                    clonedDoc.querySelectorAll('.modal, .modal-backdrop, .modal-container, .toast').forEach(el => {
+                        el.style.setProperty('display', 'none', 'important');
+                    });
                 }
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -1216,19 +1210,13 @@ async function imprimirOrdenSalidaPDF(ordenId) {
                 scrollY: 0,
                 windowWidth: 800,
                 onclone: (clonedDoc) => {
-                    const printWrapper = clonedDoc.getElementById('print-wrapper-soporte-salida');
-                    if (printWrapper) {
-                        Array.from(clonedDoc.body.children).forEach(child => {
-                            if (child !== printWrapper) {
-                                child.style.setProperty('display', 'none', 'important');
-                            }
-                        });
-                        printWrapper.style.position = 'absolute';
-                        printWrapper.style.left = '0';
-                        printWrapper.style.top = '0';
-                        printWrapper.style.margin = '0';
-                        printWrapper.style.padding = '0';
-                    }
+                    const sidebar = clonedDoc.querySelector('.sidebar');
+                    if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
+                    const topHeader = clonedDoc.querySelector('.top-header');
+                    if (topHeader) topHeader.style.setProperty('display', 'none', 'important');
+                    clonedDoc.querySelectorAll('.modal, .modal-backdrop, .modal-container, .toast').forEach(el => {
+                        el.style.setProperty('display', 'none', 'important');
+                    });
                 }
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }

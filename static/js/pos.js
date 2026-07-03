@@ -1035,19 +1035,13 @@ async function imprimirComprobantePDF(ventaId) {
                 scrollY: 0,
                 windowWidth: esTicketOTermico ? 300 : 800,
                 onclone: (clonedDoc) => {
-                    const printWrapper = clonedDoc.getElementById('print-wrapper-pos');
-                    if (printWrapper) {
-                        Array.from(clonedDoc.body.children).forEach(child => {
-                            if (child !== printWrapper) {
-                                child.style.setProperty('display', 'none', 'important');
-                            }
-                        });
-                        printWrapper.style.position = 'absolute';
-                        printWrapper.style.left = '0';
-                        printWrapper.style.top = '0';
-                        printWrapper.style.margin = '0';
-                        printWrapper.style.padding = '0';
-                    }
+                    const sidebar = clonedDoc.querySelector('.sidebar');
+                    if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
+                    const topHeader = clonedDoc.querySelector('.top-header');
+                    if (topHeader) topHeader.style.setProperty('display', 'none', 'important');
+                    clonedDoc.querySelectorAll('.modal, .modal-backdrop, .modal-container, .toast').forEach(el => {
+                        el.style.setProperty('display', 'none', 'important');
+                    });
                 }
             },
             jsPDF:        esTicketOTermico 

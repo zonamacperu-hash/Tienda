@@ -930,7 +930,7 @@ async function imprimirComprobantePDF(ventaId) {
         }
 
         printContainer.innerHTML = `
-            <div style="${esTicketOTermico ? 'text-align:center; border-bottom:1px dashed #e5e7eb; padding-bottom:12px; margin-bottom:12px;' : 'display:flex; justify-content:between; align-items:flex-start; border-bottom:2px solid #e5e7eb; padding-bottom:16px; margin-bottom:20px;'}">
+            <div style="${esTicketOTermico ? 'text-align:center; border-bottom:1px dashed #e5e7eb; padding-bottom:12px; margin-bottom:12px;' : 'display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #e5e7eb; padding-bottom:16px; margin-bottom:20px;'}">
                 <div style="${esTicketOTermico ? 'margin-bottom:10px;' : 'flex:1;'}">
                     <h1 style="font-size:${esTicketOTermico ? '15px' : '20px'}; font-weight:800; color:#4f46e5; margin:0 0 6px;">${config.empresa_nombre}</h1>
                     <p style="margin:0; color:#4b5563; font-size:${esTicketOTermico ? '10px' : '12px'};">RUC: ${config.empresa_ruc}</p>
@@ -1033,7 +1033,22 @@ async function imprimirComprobantePDF(ventaId) {
                 useCORS: true,
                 scrollX: 0,
                 scrollY: 0,
-                windowWidth: esTicketOTermico ? 300 : 800
+                windowWidth: esTicketOTermico ? 300 : 800,
+                onclone: (clonedDoc) => {
+                    const printWrapper = clonedDoc.getElementById('print-wrapper-pos');
+                    if (printWrapper) {
+                        Array.from(clonedDoc.body.children).forEach(child => {
+                            if (child !== printWrapper) {
+                                child.style.setProperty('display', 'none', 'important');
+                            }
+                        });
+                        printWrapper.style.position = 'absolute';
+                        printWrapper.style.left = '0';
+                        printWrapper.style.top = '0';
+                        printWrapper.style.margin = '0';
+                        printWrapper.style.padding = '0';
+                    }
+                }
             },
             jsPDF:        esTicketOTermico 
                 ? { unit: 'mm', format: [80, 150 + detalles.length * 15], orientation: 'portrait' }
@@ -1042,6 +1057,7 @@ async function imprimirComprobantePDF(ventaId) {
 
         // Crear contenedor wrapper con position: absolute para evitar problemas de posicionamiento y clipping en html2canvas
         const wrapper = document.createElement('div');
+        wrapper.id = 'print-wrapper-pos';
         wrapper.style.position = 'absolute';
         wrapper.style.left = '0';
         wrapper.style.top = '0';

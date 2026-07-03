@@ -827,13 +827,29 @@ async function generarPDFCotizacion() {
                 useCORS: true,
                 scrollX: 0,
                 scrollY: 0,
-                windowWidth: 800
+                windowWidth: 800,
+                onclone: (clonedDoc) => {
+                    const printWrapper = clonedDoc.getElementById('print-wrapper-cotizacion');
+                    if (printWrapper) {
+                        Array.from(clonedDoc.body.children).forEach(child => {
+                            if (child !== printWrapper) {
+                                child.style.setProperty('display', 'none', 'important');
+                            }
+                        });
+                        printWrapper.style.position = 'absolute';
+                        printWrapper.style.left = '0';
+                        printWrapper.style.top = '0';
+                        printWrapper.style.margin = '0';
+                        printWrapper.style.padding = '0';
+                    }
+                }
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         // Crear contenedor wrapper con position: absolute para evitar problemas de posicionamiento y clipping en html2canvas
         const wrapper = document.createElement('div');
+        wrapper.id = 'print-wrapper-cotizacion';
         wrapper.style.position = 'absolute';
         wrapper.style.left = '0';
         wrapper.style.top = '0';

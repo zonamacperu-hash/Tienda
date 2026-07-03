@@ -1023,53 +1023,24 @@ async function imprimirComprobantePDF(ventaId) {
             </div>
         `;
 
-        // Opciones de html2pdf
         const opt = {
-            margin:       esTicketOTermico ? [4, 4, 4, 4] : 10,
-            filename:     `${venta.tipo_comprobante}_${venta.serie_comprobante}-${venta.correlativo_comprobante}.pdf`,
+            margin:       esTicketOTermico ? 2 : 10,
+            filename:     `Comprobante_${venta.serie_comprobante}-${venta.correlativo_comprobante}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
                 scale: esTicketOTermico ? 3 : 2, 
-                useCORS: true,
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: esTicketOTermico ? 300 : 800,
-                onclone: (clonedDoc) => {
-                    const sidebar = clonedDoc.querySelector('.sidebar');
-                    if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
-                    const topHeader = clonedDoc.querySelector('.top-header');
-                    if (topHeader) topHeader.style.setProperty('display', 'none', 'important');
-                    clonedDoc.querySelectorAll('.modal, .modal-backdrop, .modal-container, .toast').forEach(el => {
-                        el.style.setProperty('display', 'none', 'important');
-                    });
-                }
+                useCORS: true
             },
             jsPDF:        esTicketOTermico 
                 ? { unit: 'mm', format: [80, 150 + detalles.length * 15], orientation: 'portrait' }
                 : { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Crear contenedor wrapper con position: absolute para evitar problemas de posicionamiento y clipping en html2canvas
-        const wrapper = document.createElement('div');
-        wrapper.id = 'print-wrapper-pos';
-        wrapper.style.position = 'absolute';
-        wrapper.style.left = '0';
-        wrapper.style.top = '0';
-        wrapper.style.width = esTicketOTermico ? '300px' : '800px';
-        wrapper.style.height = 'auto';
-        wrapper.style.overflow = 'hidden';
-        wrapper.style.zIndex = '-9999';
-        wrapper.style.pointerEvents = 'none';
-
         printContainer.style.width = esTicketOTermico ? '300px' : '800px';
         
-        wrapper.appendChild(printContainer);
-        document.body.appendChild(wrapper);
-
         // Generar descarga PDF de forma asíncrona
         await html2pdf().set(opt).from(printContainer).save();
         
-        document.body.removeChild(wrapper);
         mostrarToast("Comprobante generado e impreso en PDF con éxito.", "success");
 
     } catch (err) {

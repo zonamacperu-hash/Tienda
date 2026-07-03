@@ -824,44 +824,16 @@ async function generarPDFCotizacion() {
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
                 scale: 2, 
-                useCORS: true,
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: 800,
-                onclone: (clonedDoc) => {
-                    const sidebar = clonedDoc.querySelector('.sidebar');
-                    if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
-                    const topHeader = clonedDoc.querySelector('.top-header');
-                    if (topHeader) topHeader.style.setProperty('display', 'none', 'important');
-                    clonedDoc.querySelectorAll('.modal, .modal-backdrop, .modal-container, .toast').forEach(el => {
-                        el.style.setProperty('display', 'none', 'important');
-                    });
-                }
+                useCORS: true
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Crear contenedor wrapper con position: absolute para evitar problemas de posicionamiento y clipping en html2canvas
-        const wrapper = document.createElement('div');
-        wrapper.id = 'print-wrapper-cotizacion';
-        wrapper.style.position = 'absolute';
-        wrapper.style.left = '0';
-        wrapper.style.top = '0';
-        wrapper.style.width = '800px';
-        wrapper.style.height = 'auto';
-        wrapper.style.overflow = 'hidden';
-        wrapper.style.zIndex = '-9999';
-        wrapper.style.pointerEvents = 'none';
-
         printContainer.style.width = '800px';
         
-        wrapper.appendChild(printContainer);
-        document.body.appendChild(wrapper);
-
         // Generar descarga PDF de forma asíncrona
         await html2pdf().set(opt).from(printContainer).save();
         
-        document.body.removeChild(wrapper);
         mostrarToast("PDF de Cotización descargado con éxito.", "success");
 
         // Guardar en Historial local

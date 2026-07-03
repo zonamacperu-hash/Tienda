@@ -188,11 +188,28 @@ async function cargarDatosDashboardPremium() {
         if (data.ventas_recientes && data.ventas_recientes.length > 0) {
             tbodyVentas.innerHTML = data.ventas_recientes.map(v => {
                 const badgeColor = v.estado === 'Completada' ? 'var(--color-success)' : 'var(--color-danger)';
+                let parsedStr = v.fecha_venta;
+                if (typeof parsedStr === 'string') {
+                    if (!parsedStr.includes('T') && !parsedStr.includes('Z') && parsedStr.includes(' ')) {
+                        parsedStr = parsedStr.replace(' ', 'T') + 'Z';
+                    } else if (parsedStr.includes('T') && !parsedStr.includes('Z') && !parsedStr.includes('+') && !parsedStr.includes('-')) {
+                        parsedStr = parsedStr + 'Z';
+                    }
+                }
+                const d = new Date(parsedStr);
+                let fechaFormateada = v.fecha_venta;
+                if (!isNaN(d.getTime())) {
+                    const horas = String(d.getHours()).padStart(2, '0');
+                    const minutos = String(d.getMinutes()).padStart(2, '0');
+                    const dia = String(d.getDate()).padStart(2, '0');
+                    const mes = String(d.getMonth() + 1).padStart(2, '0');
+                    fechaFormateada = `${horas}:${minutos} (${dia}/${mes})`;
+                }
                 return `
                     <tr>
                         <td style="font-family:monospace; font-weight:700;">${v.documento}</td>
                         <td style="font-weight:600;">${v.cliente_nombre}</td>
-                        <td style="font-size:0.75rem; color:var(--text-muted);">${v.fecha_venta.substring(11, 16)} (${v.fecha_venta.substring(8,10)}/${v.fecha_venta.substring(5,7)})</td>
+                        <td style="font-size:0.75rem; color:var(--text-muted);">${fechaFormateada}</td>
                         <td style="text-align:right; font-weight:700; color:${badgeColor};">${formatCurrency(v.total, v.moneda)}</td>
                     </tr>
                 `;

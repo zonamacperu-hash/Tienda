@@ -818,6 +818,18 @@ def registrar_abono():
                     (nuevo_pagado, nuevo_estado, cuenta_id)
                 )
                 
+                # Registrar el método de pago del abono en venta_pagos
+                venta = cursor.execute("SELECT moneda FROM ventas WHERE id = ?", (ref_id,)).fetchone()
+                moneda = venta[0] if venta else 'PEN'
+                metodo_pago = data.get('metodo_pago', 'Efectivo')
+                if metodo_pago not in ('Efectivo', 'Transferencia', 'Yape/Plin', 'Tarjeta'):
+                    raise ValueError(f"Método de pago '{metodo_pago}' no es válido.")
+                
+                cursor.execute(
+                    "INSERT INTO venta_pagos (venta_id, metodo_pago, monto, moneda) VALUES (?, ?, ?, ?)",
+                    (ref_id, metodo_pago, monto_abono, moneda)
+                )
+                
             elif tipo == 'pagar':
                 # Cuenta por pagar
                 cuenta = cursor.execute(

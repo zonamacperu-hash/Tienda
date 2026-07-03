@@ -385,11 +385,25 @@ function floatVal(val) {
 
 function formatFecha(fechaStr) {
     if (!fechaStr) return '';
-    const date = new Date(fechaStr);
+    let parsedStr = fechaStr;
+    // Si la fecha viene de la base de datos (SQLite) como 'YYYY-MM-DD HH:MM:SS' sin zona horaria,
+    // la convertimos a formato ISO con 'T' y agregamos 'Z' para indicar que es UTC, 
+    // previniendo que el navegador la interprete erróneamente en hora local.
+    if (typeof parsedStr === 'string') {
+        if (!parsedStr.includes('T') && !parsedStr.includes('Z') && parsedStr.includes(' ')) {
+            parsedStr = parsedStr.replace(' ', 'T') + 'Z';
+        } else if (parsedStr.includes('T') && !parsedStr.includes('Z') && !parsedStr.includes('+') && !parsedStr.includes('-')) {
+            parsedStr = parsedStr + 'Z';
+        }
+    }
+    const date = new Date(parsedStr);
     if (isNaN(date.getTime())) return fechaStr; // Retorna original si falla
     return date.toLocaleString('es-PE', { 
-        year: 'numeric', month: '2-digit', day: '2-digit', 
-        hour: '2-digit', minute: '2-digit' 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit' 
     });
 }
 

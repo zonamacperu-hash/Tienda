@@ -37,6 +37,25 @@ export async function onRequestPost(context) {
         "UPDATE cuentas_por_cobrar SET monto_pagado = ?, estado = ? WHERE id = ?",
         [nuevo_pagado, nuevo_estado, cuenta_id]
       );
+
+      // Registrar el método de pago del abono en venta_pagos
+      const venta = await queryDb(
+        env,
+        "SELECT moneda FROM ventas WHERE id = ?",
+        [ref_id],
+        true
+      );
+      const moneda = venta ? venta.moneda : 'PEN';
+      const metodo_pago = data.metodo_pago || 'Efectivo';
+      if (!['Efectivo', 'Transferencia', 'Yape/Plin', 'Tarjeta'].includes(metodo_pago)) {
+        return errorResponse(`Método de pago '${metodo_pago}' no es válido.`, 400);
+      }
+
+      await executeDb(
+        env,
+        "INSERT INTO venta_pagos (venta_id, metodo_pago, monto, moneda) VALUES (?, ?, ?, ?)",
+        [ref_id, metodo_pago, monto_abono, moneda]
+      );
     } else if (tipo === 'pagar') {
       const cuenta = await queryDb(
         env,

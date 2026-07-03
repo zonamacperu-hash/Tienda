@@ -1039,14 +1039,14 @@ async function imprimirOrdenIngresoPDF(ordenId) {
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Crear contenedor wrapper con position: fixed para ocultar del viewport de usuario pero mantener en el DOM
+        // Crear contenedor wrapper con position: absolute para evitar problemas de posicionamiento y clipping en html2canvas
         const wrapper = document.createElement('div');
-        wrapper.style.position = 'fixed';
+        wrapper.style.position = 'absolute';
         wrapper.style.left = '0';
         wrapper.style.top = '0';
-        wrapper.style.width = '0';
-        wrapper.style.height = '0';
-        wrapper.style.overflow = 'visible';
+        wrapper.style.width = '800px';
+        wrapper.style.height = 'auto';
+        wrapper.style.overflow = 'hidden';
         wrapper.style.zIndex = '-9999';
         wrapper.style.pointerEvents = 'none';
 
@@ -1203,14 +1203,14 @@ async function imprimirOrdenSalidaPDF(ordenId) {
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Crear contenedor wrapper con position: fixed para ocultar del viewport de usuario pero mantener en el DOM
+        // Crear contenedor wrapper con position: absolute para evitar problemas de posicionamiento y clipping en html2canvas
         const wrapper = document.createElement('div');
-        wrapper.style.position = 'fixed';
+        wrapper.style.position = 'absolute';
         wrapper.style.left = '0';
         wrapper.style.top = '0';
-        wrapper.style.width = '0';
-        wrapper.style.height = '0';
-        wrapper.style.overflow = 'visible';
+        wrapper.style.width = '800px';
+        wrapper.style.height = 'auto';
+        wrapper.style.overflow = 'hidden';
         wrapper.style.zIndex = '-9999';
         wrapper.style.pointerEvents = 'none';
 

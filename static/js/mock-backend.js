@@ -1032,6 +1032,25 @@
                 cuenta.estado = Math.abs(nuevo_pagado - cuenta.monto_total) < 0.01 || nuevo_pagado >= cuenta.monto_total ? 'Pagado' : 'Pendiente';
                 db.set('cuentas_por_cobrar', cobrars);
                 
+                // Registrar el método de pago del abono en venta_pagos
+                const ventas = db.get('ventas') || [];
+                const venta = ventas.find(v => v.id === ref_id);
+                const moneda = venta ? venta.moneda : 'PEN';
+                const metodo_pago = data.metodo_pago || 'Efectivo';
+                if (!['Efectivo', 'Transferencia', 'Yape/Plin', 'Tarjeta'].includes(metodo_pago)) {
+                    throw new Error(`Método de pago '${metodo_pago}' no es válido.`);
+                }
+                
+                const ventaPagos = db.get('venta_pagos') || [];
+                ventaPagos.push({
+                    id: ventaPagos.length > 0 ? Math.max(...ventaPagos.map(p => p.id)) + 1 : 1,
+                    venta_id: ref_id,
+                    metodo_pago: metodo_pago,
+                    monto: monto_abono,
+                    moneda: moneda
+                });
+                db.set('venta_pagos', ventaPagos);
+                
             } else if (data.tipo === 'pagar') {
                 const pagars = db.get('cuentas_por_pagar');
                 const idx = pagars.findIndex(c => c.compra_id === ref_id);

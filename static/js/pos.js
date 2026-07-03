@@ -1040,20 +1040,18 @@ async function imprimirComprobantePDF(ventaId) {
                 : { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Crear contenedor wrapper con position: fixed para ocultar del viewport de usuario pero mantener en el DOM
+        // Crear contenedor wrapper con position: absolute para evitar problemas de posicionamiento y clipping en html2canvas
         const wrapper = document.createElement('div');
-        wrapper.style.position = 'fixed';
+        wrapper.style.position = 'absolute';
         wrapper.style.left = '0';
         wrapper.style.top = '0';
-        wrapper.style.width = '0';
-        wrapper.style.height = '0';
-        wrapper.style.overflow = 'visible';
+        wrapper.style.width = esTicketOTermico ? '300px' : '800px';
+        wrapper.style.height = 'auto';
+        wrapper.style.overflow = 'hidden';
         wrapper.style.zIndex = '-9999';
         wrapper.style.pointerEvents = 'none';
 
-        if (!esTicketOTermico) {
-            printContainer.style.width = '800px';
-        }
+        printContainer.style.width = esTicketOTermico ? '300px' : '800px';
         
         wrapper.appendChild(printContainer);
         document.body.appendChild(wrapper);
@@ -1113,7 +1111,7 @@ function validarPagosCombinados() {
             difMonto.className = 'font-bold text-rose-500';
         }
         if (difLabel) difLabel.textContent = 'Falta ingresar:';
-        if (alerta) alerta.classList.remove('hidden');
+        if (alerta) alerta.style.display = 'block';
         if (checkoutBtn) checkoutBtn.setAttribute('disabled', 'true');
         return false;
     } else {
@@ -1132,7 +1130,7 @@ function validarPagosCombinados() {
             }
             if (difLabel) difLabel.textContent = 'Pago exacto';
         }
-        if (alerta) alerta.classList.add('hidden');
+        if (alerta) alerta.style.display = 'none';
         if (checkoutBtn) checkoutBtn.removeAttribute('disabled');
         return true;
     }
@@ -1393,6 +1391,34 @@ function abrirCheckoutModal() {
         }
     }
 
+    // Resetear formulario a estado inicial limpio
+    const condPagoSelect = document.getElementById('pos-condicion-pago');
+    if (condPagoSelect) condPagoSelect.value = 'Contado';
+    
+    const vencimientoWrapper = document.getElementById('pos-vencimiento-wrapper');
+    if (vencimientoWrapper) vencimientoWrapper.style.display = 'none';
+    
+    const inputVencimiento = document.getElementById('pos-fecha-vencimiento');
+    if (inputVencimiento) {
+        inputVencimiento.removeAttribute('required');
+        inputVencimiento.value = '';
+    }
+    
+    const inputEfectivo = document.getElementById('pago-monto-efectivo');
+    if (inputEfectivo) inputEfectivo.value = '0.00';
+    
+    const inputTransferencia = document.getElementById('pago-monto-transferencia');
+    if (inputTransferencia) inputTransferencia.value = '0.00';
+    
+    const inputYape = document.getElementById('pago-monto-yape');
+    if (inputYape) inputYape.value = '0.00';
+    
+    const inputTarjeta = document.getElementById('pago-monto-tarjeta');
+    if (inputTarjeta) inputTarjeta.value = '0.00';
+    
+    const inputObservaciones = document.getElementById('pos-observaciones');
+    if (inputObservaciones) inputObservaciones.value = '';
+
     // Mostrar/ocultar sección de items del préstamo
     const pSec = document.getElementById('checkout-prestamo-items-section');
     if (pSec) {
@@ -1415,7 +1441,6 @@ function abrirCheckoutModal() {
     const tarjeta = parseFloat(document.getElementById('pago-monto-tarjeta').value) || 0;
     
     if (transferencia === 0 && yape === 0 && tarjeta === 0) {
-        const inputEfectivo = document.getElementById('pago-monto-efectivo');
         if (inputEfectivo) {
             inputEfectivo.value = totalVenta.toFixed(2);
         }

@@ -400,7 +400,7 @@ function abrirModalAbono(tipo, referenciaId, saldoDeuda, actorId, actorNombre) {
         ? `Registrar Cobro: ${actorNombre}` 
         : `Registrar Pago a Proveedor: ${actorNombre}`;
 
-    const labelDeuda = tipo === 'cobrar' ? 'Monto Cobrado (Efectivo)' : 'Monto Pagado';
+    const labelDeuda = tipo === 'cobrar' ? 'Monto Cobrado' : 'Monto Pagado';
 
     const bodyHtml = `
         <form id="form-abono-modal">
@@ -410,6 +410,15 @@ function abrirModalAbono(tipo, referenciaId, saldoDeuda, actorId, actorNombre) {
             <div class="form-group">
                 <label class="form-label" for="abono-monto">${labelDeuda}</label>
                 <input type="number" step="0.01" min="0.01" max="${saldoDeuda + 0.01}" class="form-input" id="abono-monto" value="${saldoDeuda.toFixed(2)}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="abono-metodo-pago">Método de Pago</label>
+                <select class="form-select" id="abono-metodo-pago" required>
+                    <option value="Efectivo" selected>Efectivo</option>
+                    <option value="Transferencia">Transferencia Bancaria</option>
+                    <option value="Yape/Plin">Yape / Plin</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                </select>
             </div>
         </form>
     `;
@@ -432,7 +441,8 @@ function abrirModalAbono(tipo, referenciaId, saldoDeuda, actorId, actorNombre) {
             const payload = {
                 tipo: tipo,
                 referencia_id: referenciaId,
-                monto_abono: parseFloat(document.getElementById('abono-monto').value)
+                monto_abono: parseFloat(document.getElementById('abono-monto').value),
+                metodo_pago: document.getElementById('abono-metodo-pago').value
             };
 
             try {

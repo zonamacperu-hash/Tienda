@@ -10,7 +10,7 @@ export async function onRequestGet(context) {
       `SELECT c.*, v.serie_comprobante || '-' || v.correlativo_comprobante as documento, v.fecha_venta as fecha, v.moneda as moneda
        FROM cuentas_por_cobrar c
        JOIN ventas v ON c.venta_id = v.id
-       WHERE c.cliente_id = ?
+       WHERE c.cliente_id = ? AND v.estado != 'Anulada'
        ORDER BY c.fecha_vencimiento ASC`,
       [id]
     );
@@ -21,7 +21,7 @@ export async function onRequestGet(context) {
       `SELECT p.*, c.serie_comprobante || '-' || c.correlativo_comprobante as documento, c.fecha_compra as fecha, c.moneda as moneda
        FROM cuentas_por_pagar p
        JOIN compras c ON p.compra_id = c.id
-       WHERE p.proveedor_id = ?
+       WHERE p.proveedor_id = ? AND c.estado != 'Anulada'
        ORDER BY p.fecha_vencimiento ASC`,
       [id]
     );

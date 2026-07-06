@@ -19,7 +19,11 @@ export async function onRequestPut(context) {
       );
     }
 
-    await executeDb(env, "UPDATE compras SET estado = 'Anulada' WHERE id = ?", [id]);
+    // Run as a batch transaction in Cloudflare D1
+    await env.DB.batch([
+      env.DB.prepare("UPDATE compras SET estado = 'Anulada' WHERE id = ?").bind(id),
+      env.DB.prepare("DELETE FROM cuentas_por_pagar WHERE compra_id = ?").bind(id)
+    ]);
     
     // SQLite trigger trg_compra_anulada will automatically subtract stock and delete the entered series.
     return jsonResponse({

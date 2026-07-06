@@ -535,7 +535,7 @@ def actor_estado_cuenta(id):
         SELECT c.*, v.serie_comprobante || '-' || v.correlativo_comprobante as documento, v.fecha_venta as fecha, v.moneda as moneda
         FROM cuentas_por_cobrar c
         JOIN ventas v ON c.venta_id = v.id
-        WHERE c.cliente_id = ?
+        WHERE c.cliente_id = ? AND v.estado != 'Anulada'
         ORDER BY c.fecha_vencimiento ASC
     """, [id])
     
@@ -544,7 +544,7 @@ def actor_estado_cuenta(id):
         SELECT p.*, c.serie_comprobante || '-' || c.correlativo_comprobante as documento, c.fecha_compra as fecha, c.moneda as moneda
         FROM cuentas_por_pagar p
         JOIN compras c ON p.compra_id = c.id
-        WHERE p.proveedor_id = ?
+        WHERE p.proveedor_id = ? AND c.estado != 'Anulada'
         ORDER BY p.fecha_vencimiento ASC
     """, [id])
     
@@ -706,9 +706,9 @@ def anular_compra(id):
         if series_vendidas and series_vendidas['COUNT(*)'] > 0:
             return jsonify({"exito": False, "mensaje": "No se puede anular la compra. Algunas de las series ingresadas ya han sido vendidas o movilizadas."}), 400
             
-        execute_db("UPDATE compras SET estado = 'Anulada' WHERE id = ?", [id])
-        # El trigger `trg_compra_anulada` de SQLite restará automáticamente el stock
-        # y eliminará las series físicas ingresadas de `producto_series`.
+        with transaction() as cursor:
+            cursor.execute("UPDATE compras SET estado = 'Anulada' WHERE id = ?", (id,))
+            cursor.execute("DELETE FROM cuentas_por_pagar WHERE compra_id = ?", (id,))
         
         return jsonify({"exito": True, "mensaje": "Compra anulada con éxito. Stock e inventario revertidos."})
     except Exception as e:
@@ -772,9 +772,10 @@ def venta_detalles(id):
 @app.route('/api/ventas/<int:id>/anular', methods=['PUT'])
 def anular_venta(id):
     try:
-        execute_db("UPDATE ventas SET estado = 'Anulada' WHERE id = ?", [id])
-        # El trigger `trg_venta_anulada` de SQLite devolverá automáticamente el stock de los productos
-        # tradicionales y liberará las series físicas vendidas pasándolas a estado 'Disponible'.
+        with transaction() as cursor:
+            cursor.execute("UPDATE ventas SET estado = 'Anulada' WHERE id = ?", (id,))
+            cursor.execute("DELETE FROM cuentas_por_cobrar WHERE venta_id = ?", (id,))
+            cursor.execute("DELETE FROM venta_pagos WHERE venta_id = ?", (id,))
         
         return jsonify({"exito": True, "mensaje": "Venta anulada con éxito. Stock y series físicas liberados."})
     except Exception as e:

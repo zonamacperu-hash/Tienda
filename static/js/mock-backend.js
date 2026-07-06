@@ -470,11 +470,22 @@
             const parts = path.split('/');
             const actorId = Number(parts[parts.length - 2]);
             
-            const por_cobrar = db.get('cuentas_por_cobrar').filter(c => c.cliente_id === actorId);
-            const por_pagar = db.get('cuentas_por_pagar').filter(p => p.proveedor_id === actorId);
-            
-            const ventas = db.get('ventas');
-            const compras = db.get('compras');
+            const ventas = db.get('ventas') || [];
+            const compras = db.get('compras') || [];
+
+            const por_cobrar = db.get('cuentas_por_cobrar')
+                .filter(c => c.cliente_id === actorId)
+                .filter(c => {
+                    const v = ventas.find(x => x.id === c.venta_id);
+                    return v && v.estado !== 'Anulada';
+                });
+
+            const por_pagar = db.get('cuentas_por_pagar')
+                .filter(p => p.proveedor_id === actorId)
+                .filter(p => {
+                    const comp = compras.find(x => x.id === p.compra_id);
+                    return comp && comp.estado !== 'Anulada';
+                });
             
             por_cobrar.forEach(c => {
                 const v = ventas.find(x => x.id === c.venta_id);
@@ -690,6 +701,10 @@
                 });
                 db.set('productos', prods);
                 db.set('producto_series', series.filter(s => s.compra_id !== compraId));
+                
+                // Delete accounts payable for this purchase
+                const pagars = db.get('cuentas_por_pagar').filter(p => p.compra_id !== compraId);
+                db.set('cuentas_por_pagar', pagars);
             }
             return jsonResponse({ exito: true, mensaje: "Compra anulada con éxito. Stock e inventario revertidos." });
         }
@@ -1036,6 +1051,12 @@
                     }
                 });
                 db.set('producto_series', series);
+
+                // Delete accounts receivable and payments for this sale
+                const cobrars = db.get('cuentas_por_cobrar').filter(c => c.venta_id !== ventaId);
+                db.set('cuentas_por_cobrar', cobrars);
+                const pagos = db.get('venta_pagos').filter(p => p.venta_id !== ventaId);
+                db.set('venta_pagos', pagos);
             }
             return jsonResponse({ exito: true, mensaje: "Venta anulada con éxito. Stock y series físicas liberados." });
         }

@@ -1137,5 +1137,105 @@ class TestERPPOSLogic(unittest.TestCase):
         self.assertEqual(det['precio_unitario'], 80.00)
         self.assertEqual(det['subtotal'], 80.00)
 
+    def test_13_credito_con_adelanto(self):
+        """Valida que una venta al crédito con adelanto cree el registro de pago y la cuenta por cobrar con saldo restante."""
+        # 1. Configurar stock de producto
+        execute_db("UPDATE productos SET stock_actual = 5 WHERE id = 2") # Mouse Logitech (S/ 100)
+        
+        # 2. Venta al crédito con adelanto parcial de S/ 30.00
+        venta_parcial = {
+            "cliente_id": 1,
+            "usuario_id": 2,
+            "tipo_comprobante": "Ticket",
+            "moneda": "PEN",
+            "condicion_pago": "Credito",
+            "fecha_vencimiento": "2026-08-30",
+            "monto_adelanto": 30.00,
+            "metodo_pago_adelanto": "Tarjeta",
+            "items": [{"producto_id": 2, "cantidad": 1, "tipo_precio": "Final"}]
+        }
+        res_parcial = procesar_venta_transaccional(venta_parcial)
+        self.assertTrue(res_parcial['exito'])
+        self.assertEqual(res_parcial['total'], 100.00)
+        
+        # Verificar pago registrado
+        pago = query_db("SELECT * FROM venta_pagos WHERE venta_id = ?", [res_parcial['venta_id']], one=True)
+        self.assertIsNotNone(pago)
+        self.assertEqual(pago['metodo_pago'], 'Tarjeta')
+        self.assertEqual(pago['monto'], 30.00)
+        
+        # Verificar cuenta por cobrar
+        cxc = query_db("SELECT * FROM cuentas_por_cobrar WHERE venta_id = ?", [res_parcial['venta_id']], one=True)
+        self.assertIsNotNone(cxc)
+        self.assertEqual(cxc['monto_total'], 100.00)
+        self.assertEqual(cxc['monto_pagado'], 30.00)
+        self.assertEqual(cxc['estado'], 'Pendiente')
+
+        # 3. Venta al crédito con adelanto completo de S/ 100.00 (debe figurar como Pagado)
+        execute_db("UPDATE productos SET stock_actual = 5 WHERE id = 2")
+        venta_total = {
+            "cliente_id": 1,
+            "usuario_id": 2,
+            "tipo_comprobante": "Ticket",
+            "moneda": "PEN",
+            "condicion_pago": "Credito",
+            "fecha_vencimiento": "2026-08-30",
+            "monto_adelanto": 100.00,
+            "metodo_pago_adelanto": "Efectivo",
+            "items": [{"producto_id": 2, "cantidad": 1, "tipo_precio": "Final"}]
+        }
+        res_total = procesar_venta_transaccional(venta_total)
+        self.assertTrue(res_total['exito'])
+        
+        # Verificar cuenta por cobrar en estado Pagado
+        cxc_total = query_db("SELECT * FROM cuentas_por_cobrar WHERE venta_id = ?", [res_total['venta_id']], one=True)
+        self.assertEqual(cxc_total['estado'], 'Pagado')
+
+    def test_14_moneda_conversion_avanzada(self):
+        """Valida la conversión de tipo de cambio cruzada de productos con base USD vendidos en PEN y viceversa."""
+        # 1. Crear producto con moneda base USD (precio final $100.00)
+        execute_db("""
+            INSERT INTO productos (categoria_id, nombre, maneja_series, stock_minimo, stock_actual, precio_base, precio_final, moneda)
+            VALUES (1, 'Tablet USD', 0, 1, 5, 80.00, 100.00, 'USD')
+        """)
+        prod_id = query_db("SELECT id FROM productos WHERE nombre = 'Tablet USD'", one=True)['id']
+        
+        # 2. Venta en SOLES (PEN) - Debe costar 100.00 * 3.75 = S/ 375.00
+        venta_pen = {
+            "cliente_id": 1,
+            "usuario_id": 2,
+            "tipo_comprobante": "Ticket",
+            "moneda": "PEN",
+            "condicion_pago": "Contado",
+            "pagos": [{"metodo_pago": "Efectivo", "monto": 375.00}],
+            "items": [{"producto_id": prod_id, "cantidad": 1, "tipo_precio": "Final"}]
+        }
+        res_pen = procesar_venta_transaccional(venta_pen)
+        self.assertTrue(res_pen['exito'])
+        self.assertEqual(res_pen['total'], 375.00)
+        
+        # Verificar precio unitario en el detalle
+        det_pen = query_db("SELECT precio_unitario FROM venta_detalles WHERE venta_id = ?", [res_pen['venta_id']], one=True)
+        self.assertEqual(det_pen['precio_unitario'], 375.00)
+
+        # 3. Venta en DÓLARES (USD) - Debe costar exactamente $100.00 (sin conversión ya que la base es USD)
+        execute_db("UPDATE productos SET stock_actual = 5 WHERE id = ?", [prod_id])
+        venta_usd = {
+            "cliente_id": 1,
+            "usuario_id": 2,
+            "tipo_comprobante": "Ticket",
+            "moneda": "USD",
+            "condicion_pago": "Contado",
+            "pagos": [{"metodo_pago": "Efectivo", "monto": 100.00}],
+            "items": [{"producto_id": prod_id, "cantidad": 1, "tipo_precio": "Final"}]
+        }
+        res_usd = procesar_venta_transaccional(venta_usd)
+        self.assertTrue(res_usd['exito'])
+        self.assertEqual(res_usd['total'], 100.00)
+        
+        # Verificar precio unitario en el detalle
+        det_usd = query_db("SELECT precio_unitario FROM venta_detalles WHERE venta_id = ?", [res_usd['venta_id']], one=True)
+        self.assertEqual(det_usd['precio_unitario'], 100.00)
+
 if __name__ == '__main__':
     unittest.main()

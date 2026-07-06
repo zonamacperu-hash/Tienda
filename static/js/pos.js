@@ -719,6 +719,9 @@ async function procesarCobroPOS() {
 
     const condicionPago = document.getElementById('pos-condicion-pago').value;
     const pagos = [];
+    let montoAdelanto = 0.0;
+    let metodoPagoAdelanto = 'Efectivo';
+
     if (condicionPago === 'Contado') {
         const efectivo = parseFloat(document.getElementById('pago-monto-efectivo').value) || 0;
         const transferencia = parseFloat(document.getElementById('pago-monto-transferencia').value) || 0;
@@ -729,6 +732,20 @@ async function procesarCobroPOS() {
         if (transferencia > 0) pagos.push({ metodo_pago: 'Transferencia', monto: transferencia });
         if (yape > 0) pagos.push({ metodo_pago: 'Yape/Plin', monto: yape });
         if (tarjeta > 0) pagos.push({ metodo_pago: 'Tarjeta', monto: tarjeta });
+    } else if (condicionPago === 'Credito') {
+        const totalVenta = obtenerTotalCarrito();
+        montoAdelanto = parseFloat(document.getElementById('pos-credito-adelanto').value) || 0.0;
+        metodoPagoAdelanto = document.getElementById('pos-credito-metodo-adelanto').value;
+        
+        if (montoAdelanto < 0) {
+            mostrarToast("El monto del adelanto no puede ser negativo.", "warning");
+            return;
+        }
+        if (montoAdelanto > totalVenta + 0.005) {
+            const monedaVal = document.getElementById('pos-moneda').value;
+            mostrarToast(`El adelanto (${formatCurrency(montoAdelanto, monedaVal)}) no puede ser mayor que el total de la venta (${formatCurrency(totalVenta, monedaVal)}).`, "warning");
+            return;
+        }
     }
 
     const payload = {
@@ -739,6 +756,8 @@ async function procesarCobroPOS() {
         moneda: document.getElementById('pos-moneda').value,
         condicion_pago: condicionPago,
         fecha_vencimiento: document.getElementById('pos-fecha-vencimiento').value || null,
+        monto_adelanto: montoAdelanto,
+        metodo_pago_adelanto: metodoPagoAdelanto,
         observaciones: document.getElementById('pos-observaciones').value.trim(),
         items: carritoPOS,
         pagos: pagos,
@@ -775,6 +794,14 @@ async function procesarCobroPOS() {
             document.getElementById('pago-monto-transferencia').value = "0.00";
             document.getElementById('pago-monto-yape').value = "0.00";
             document.getElementById('pago-monto-tarjeta').value = "0.00";
+            
+            // Resetear adelantos de crédito
+            const adelantoInput = document.getElementById('pos-credito-adelanto');
+            if (adelantoInput) adelantoInput.value = "0.00";
+            const adelantoMetodo = document.getElementById('pos-credito-metodo-adelanto');
+            if (adelantoMetodo) adelantoMetodo.value = "Efectivo";
+            const adelantoWrapper = document.getElementById('pos-credito-adelanto-wrapper');
+            if (adelantoWrapper) adelantoWrapper.style.display = 'none';
 
             // Resetear visualmente el toggle de comprador invitado
             const toggleManual = document.getElementById('pos-cliente-manual-toggle');
@@ -1167,12 +1194,15 @@ function inicializarEventosModalPOS() {
         condPagoSelect.addEventListener('change', (e) => {
             const wrapper = document.getElementById('pos-vencimiento-wrapper');
             const input = document.getElementById('pos-fecha-vencimiento');
+            const adelantoWrapper = document.getElementById('pos-credito-adelanto-wrapper');
             if (e.target.value === 'Credito') {
                 if (wrapper) wrapper.style.display = 'block';
                 if (input) input.setAttribute('required', 'true');
+                if (adelantoWrapper) adelantoWrapper.style.display = 'grid';
             } else {
                 if (wrapper) wrapper.style.display = 'none';
                 if (input) input.removeAttribute('required');
+                if (adelantoWrapper) adelantoWrapper.style.display = 'none';
             }
             validarPagosCombinados();
         });
@@ -1215,6 +1245,7 @@ function inicializarEventosModalPOS() {
     const selectPago = document.getElementById('pos-condicion-pago');
     const vencimientoWrapper = document.getElementById('pos-vencimiento-wrapper');
     const inputVencimiento = document.getElementById('pos-fecha-vencimiento');
+    const adelantoWrapper = document.getElementById('pos-credito-adelanto-wrapper');
 
     if (toggleManual) {
         toggleManual.addEventListener('change', () => {
@@ -1239,6 +1270,7 @@ function inicializarEventosModalPOS() {
                     selectPago.value = 'Contado';
                     if (vencimientoWrapper) vencimientoWrapper.style.display = 'none';
                     if (inputVencimiento) inputVencimiento.removeAttribute('required');
+                    if (adelantoWrapper) adelantoWrapper.style.display = 'none';
                     mostrarToast("Las ventas al crédito requieren un cliente registrado. Seleccionado 'Contado'.", "info");
                 }
             } else {

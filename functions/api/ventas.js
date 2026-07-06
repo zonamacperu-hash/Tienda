@@ -107,7 +107,7 @@ export async function onRequestPost(context) {
       // Consultar producto
       const producto = await queryDb(
         env,
-        "SELECT id, nombre, maneja_series, stock_actual, precio_base, precio_mayorista, precio_final FROM productos WHERE id = ?",
+        "SELECT id, nombre, maneja_series, stock_actual, precio_base, precio_mayorista, precio_final, moneda FROM productos WHERE id = ?",
         [producto_id],
         true
       );
@@ -122,6 +122,7 @@ export async function onRequestPost(context) {
       const prodPrecioBase = producto.precio_base;
       const prodPrecioMayorista = producto.precio_mayorista;
       const prodPrecioFinal = producto.precio_final;
+      const prodMoneda = producto.moneda;
 
       // VALIDAR NÚMEROS DE SERIE
       if (prodManejaSeries === 1) {
@@ -174,9 +175,14 @@ export async function onRequestPost(context) {
       }
 
       // Conversión si la venta es en USD
+      const monedaTransaccion = datosVenta.moneda || 'PEN';
+      const monedaProd = prodMoneda || 'PEN';
       let precioUnitarioTransaccion = precioUnitarioBaseMonedaOriginal;
-      if (datosVenta.moneda === "USD") {
+      
+      if (monedaProd === 'PEN' && monedaTransaccion === 'USD') {
         precioUnitarioTransaccion = precioUnitarioBaseMonedaOriginal / tipoCambio;
+      } else if (monedaProd === 'USD' && monedaTransaccion === 'PEN') {
+        precioUnitarioTransaccion = precioUnitarioBaseMonedaOriginal * tipoCambio;
       }
 
       const itemSubtotal = precioUnitarioTransaccion * cantidad;
@@ -291,19 +297,43 @@ export async function onRequestPost(context) {
       );
     }
 
-    // 9. Gestionar Crédito o Pagos Contado
     const condicionPago = datosVenta.condicion_pago || "Contado";
     if (condicionPago === "Credito") {
       const fechaVencimiento = datosVenta.fecha_vencimiento;
       if (!fechaVencimiento) {
         return errorResponse("Debe ingresar una fecha de vencimiento válida para ventas al crédito.", 400);
       }
+      
+      const montoAdelanto = parseFloat(datosVenta.monto_adelanto || 0.0);
+      if (montoAdelanto < 0) {
+        return errorResponse("El monto del adelanto no puede ser negativo.", 400);
+      }
+      if (montoAdelanto > ventaTotal + 0.005) {
+        return errorResponse("El adelanto no puede ser mayor que el total de la venta.", 400);
+      }
+      
+      if (montoAdelanto > 0) {
+        const metodoPagoAdelanto = datosVenta.metodo_pago_adelanto || 'Efectivo';
+        if (!["Efectivo", "Transferencia", "Yape/Plin", "Tarjeta"].includes(metodoPagoAdelanto)) {
+          return errorResponse(`Método de pago del adelanto '${metodoPagoAdelanto}' no es válido.`, 400);
+        }
+        
+        statements.push(
+          env.DB.prepare(`
+            INSERT INTO venta_pagos (venta_id, metodo_pago, monto, moneda)
+            VALUES ((SELECT MAX(id) FROM ventas), ?, ?, ?)
+          `).bind(metodoPagoAdelanto, montoAdelanto, datosVenta.moneda)
+        );
+      }
+      
+      const nuevoEstado = Math.abs(montoAdelanto - ventaTotal) < 0.01 || montoAdelanto >= ventaTotal ? 'Pagado' : 'Pendiente';
+      
       statements.push(
         env.DB.prepare(`
           INSERT INTO cuentas_por_cobrar (
             venta_id, cliente_id, monto_total, monto_pagado, fecha_vencimiento, estado
-          ) VALUES (last_insert_rowid(), ?, ?, 0.00, ?, 'Pendiente')
-        `).bind(cliente_id, ventaTotal, fechaVencimiento)
+          ) VALUES ((SELECT MAX(id) FROM ventas), ?, ?, ?, ?, ?)
+        `).bind(cliente_id, ventaTotal, montoAdelanto, fechaVencimiento, nuevoEstado)
       );
     } else if (condicionPago === "Contado") {
       const pagos = datosVenta.pagos || [];

@@ -277,6 +277,26 @@
                             </div>
                         </div>
 
+                        <!-- Adelanto en Ventas a Crédito -->
+                        <div id="pos-credito-adelanto-wrapper" style="display:none; grid-template-columns:1fr 1fr; gap:16px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.8rem; font-weight: 600; margin-bottom: 6px;">Adelanto / Pago Inicial</label>
+                                <div style="display: flex; align-items: stretch; border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; background-color: rgba(0,0,0,0.2);">
+                                    <span class="pos-pago-moneda-simbolo" style="display: flex; align-items: center; padding: 0 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); user-select: none;">S/</span>
+                                    <input type="number" step="0.01" min="0" class="pos-pago-input" id="pos-credito-adelanto" value="0.00" style="flex-grow: 1; text-align: right; background: none; border: none; outline: none; padding: 8px 12px; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.8rem; font-weight: 600; margin-bottom: 6px;">Método Pago Adelanto</label>
+                                <select class="form-select" id="pos-credito-metodo-adelanto" style="width: 100%; height: 38px;">
+                                    <option value="Efectivo" selected>Efectivo</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Yape/Plin">Yape / Plin</option>
+                                    <option value="Tarjeta">Tarjeta</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <!-- Campo de Observaciones -->
                         <div class="form-group" style="margin-bottom:0;">
                             <label class="form-label" style="font-size:0.8rem; font-weight: 600; margin-bottom: 6px;">Observaciones / Glosa de Venta</label>

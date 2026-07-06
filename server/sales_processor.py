@@ -103,14 +103,14 @@ def procesar_venta_transaccional(datos_venta):
             # Consultar y bloquear producto (SQLite no bloquea filas individuales con FOR UPDATE, 
             # pero la transacción atómica a nivel de conexión asegura exclusión mutua durante el COMMIT).
             producto = cursor.execute(
-                "SELECT id, nombre, maneja_series, stock_actual, precio_base, precio_mayorista, precio_final FROM productos WHERE id = ?",
+                "SELECT id, nombre, maneja_series, stock_actual, precio_base, precio_mayorista, precio_final, moneda FROM productos WHERE id = ?",
                 (producto_id,)
             ).fetchone()
             
             if not producto:
                 raise ValueError(f"El producto con ID {producto_id} no existe.")
             
-            prod_id, prod_nombre, prod_maneja_series, prod_stock, prod_precio_base, prod_precio_mayorista, prod_precio_final = producto
+            prod_id, prod_nombre, prod_maneja_series, prod_stock, prod_precio_base, prod_precio_mayorista, prod_precio_final, prod_moneda = producto
 
             # A. VALIDAR NÚMEROS DE SERIE
             if prod_maneja_series == 1:
@@ -167,11 +167,15 @@ def procesar_venta_transaccional(datos_venta):
                 raise ValueError(f"Tipo de precio '{tipo_precio}' no es válido.")
 
             # CONVERSIÓN DE TIPO DE CAMBIO
-            # Asumimos que los precios del catálogo en la base de datos están almacenados en SOLES (PEN).
-            # Si la transacción es en DÓLARES (USD), dividimos el precio entre el TC del día.
+            # Realizamos la conversión basándonos en la moneda base del producto y la de la venta.
+            moneda_transaccion = datos_venta.get('moneda', 'PEN')
+            moneda_prod = prod_moneda if prod_moneda else 'PEN'
             precio_unitario_transaccion = precio_unitario_base_moneda_original
-            if datos_venta['moneda'] == "USD":
+            
+            if moneda_prod == 'PEN' and moneda_transaccion == 'USD':
                 precio_unitario_transaccion = precio_unitario_base_moneda_original / tipo_cambio
+            elif moneda_prod == 'USD' and moneda_transaccion == 'PEN':
+                precio_unitario_transaccion = precio_unitario_base_moneda_original * tipo_cambio
 
             item_subtotal = precio_unitario_transaccion * cantidad
             venta_subtotal += item_subtotal
@@ -297,13 +301,34 @@ def procesar_venta_transaccional(datos_venta):
             if not fecha_vencimiento:
                 raise ValueError("Debe ingresar una fecha de vencimiento válida para ventas al crédito.")
             
+            monto_adelanto = float(datos_venta.get('monto_adelanto', 0.0))
+            if monto_adelanto < 0:
+                raise ValueError("El monto del adelanto no puede ser negativo.")
+            if monto_adelanto > venta_total + 0.005:
+                raise ValueError("El adelanto no puede ser mayor que el total de la venta.")
+            
+            if monto_adelanto > 0:
+                metodo_pago_adelanto = datos_venta.get('metodo_pago_adelanto', 'Efectivo')
+                if metodo_pago_adelanto not in ('Efectivo', 'Transferencia', 'Yape/Plin', 'Tarjeta'):
+                    raise ValueError(f"Método de pago '{metodo_pago_adelanto}' del adelanto no es válido.")
+                
+                cursor.execute(
+                    """
+                    INSERT INTO venta_pagos (venta_id, metodo_pago, monto, moneda)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (venta_id, metodo_pago_adelanto, monto_adelanto, datos_venta['moneda'])
+                )
+            
+            nuevo_estado = 'Pagado' if abs(monto_adelanto - venta_total) < 0.01 or monto_adelanto >= venta_total else 'Pendiente'
+            
             cursor.execute(
                 """
                 INSERT INTO cuentas_por_cobrar (
                     venta_id, cliente_id, monto_total, monto_pagado, fecha_vencimiento, estado
-                ) VALUES (?, ?, ?, 0.00, ?, 'Pendiente')
+                ) VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (venta_id, cliente_id, venta_total, fecha_vencimiento)
+                (venta_id, cliente_id, venta_total, monto_adelanto, fecha_vencimiento, nuevo_estado)
             )
         elif condicion_pago == "Contado":
             pagos = datos_venta.get('pagos', [])

@@ -811,8 +811,13 @@
                     }
                     
                     let precio_unitario_trans = precio_unitario_base;
-                    if (data.moneda === "USD") {
+                    const monedaTransaccion = data.moneda || 'PEN';
+                    const monedaProd = prod.moneda || 'PEN';
+                    
+                    if (monedaProd === 'PEN' && monedaTransaccion === 'USD') {
                         precio_unitario_trans = precio_unitario_base / tipo_cambio;
+                    } else if (monedaProd === 'USD' && monedaTransaccion === 'PEN') {
+                        precio_unitario_trans = precio_unitario_base * tipo_cambio;
                     }
                     const item_sub = precio_unitario_trans * qty;
                     venta_subtotal += item_sub;
@@ -904,13 +909,37 @@
                 // Cobros / Créditos
                 if (data.condicion_pago === "Credito") {
                     if (!data.fecha_vencimiento) throw new Error("Debe ingresar una fecha de vencimiento válida para ventas al crédito.");
+                    
+                    const monto_adelanto = parseFloat(data.monto_adelanto || 0.0);
+                    if (monto_adelanto < 0) throw new Error("El monto del adelanto no puede ser negativo.");
+                    if (monto_adelanto > venta_total + 0.005) throw new Error("El adelanto no puede ser mayor que el total de la venta.");
+                    
+                    if (monto_adelanto > 0) {
+                        const metodo_pago_adelanto = data.metodo_pago_adelanto || 'Efectivo';
+                        if (!['Efectivo', 'Transferencia', 'Yape/Plin', 'Tarjeta'].includes(metodo_pago_adelanto)) {
+                            throw new Error(`Método de pago '${metodo_pago_adelanto}' del adelanto no es válido.`);
+                        }
+                        
+                        const ventaPagos = db.get('venta_pagos');
+                        ventaPagos.push({
+                            id: ventaPagos.length + 1,
+                            venta_id,
+                            metodo_pago: metodo_pago_adelanto,
+                            monto: monto_adelanto,
+                            moneda: data.moneda
+                        });
+                        db.set('venta_pagos', ventaPagos);
+                    }
+                    
+                    const nuevo_estado = Math.abs(monto_adelanto - venta_total) < 0.01 || monto_adelanto >= venta_total ? 'Pagado' : 'Pendiente';
+                    
                     db.insert('cuentas_por_cobrar', {
                         venta_id,
                         cliente_id,
                         monto_total: venta_total,
-                        monto_pagado: 0.00,
+                        monto_pagado: monto_adelanto,
                         fecha_vencimiento: data.fecha_vencimiento,
-                        estado: 'Pendiente'
+                        estado: nuevo_estado
                     });
                 } else {
                     const pagos = data.pagos || [];

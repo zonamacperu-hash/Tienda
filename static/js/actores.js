@@ -303,9 +303,9 @@ async function verCuentasActor(actorId, actorNombre, actorTipo) {
                                             <tr>
                                                 <td style="font-weight:600;">${d.documento}</td>
                                                 <td>${d.fecha_vencimiento}</td>
-                                                <td style="text-align:right;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
-                                                <td style="text-align:right; color:var(--color-success);">${formatCurrency(d.monto_pagado, d.moneda || 'PEN')}</td>
-                                                <td style="text-align:right; font-weight:700; color:var(--color-warning);">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; white-space:nowrap;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; color:var(--color-success); white-space:nowrap;">${formatCurrency(d.monto_pagado, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; font-weight:700; color:var(--color-warning); white-space:nowrap;">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
                                                 <td><span class="badge ${badg}">${d.estado}</span></td>
                                                 <td style="text-align:center;">${btnAbonar}</td>
                                             </tr>
@@ -356,9 +356,9 @@ async function verCuentasActor(actorId, actorNombre, actorTipo) {
                                             <tr>
                                                 <td style="font-weight:600;">${d.documento}</td>
                                                 <td>${d.fecha_vencimiento}</td>
-                                                <td style="text-align:right;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
-                                                <td style="text-align:right; color:var(--color-success);">${formatCurrency(d.monto_pagado, d.moneda || 'PEN')}</td>
-                                                <td style="text-align:right; font-weight:700; color:var(--color-warning);">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; white-space:nowrap;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; color:var(--color-success); white-space:nowrap;">${formatCurrency(d.monto_pagado, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; font-weight:700; color:var(--color-warning); white-space:nowrap;">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
                                                 <td><span class="badge ${badg}">${d.estado}</span></td>
                                                 <td style="text-align:center;">${btnAbonar}</td>
                                             </tr>
@@ -570,8 +570,8 @@ async function cargarCuentasGlobales() {
                     <tr>
                         <td style="font-weight:600;">${actor.nombre_razon_social}</td>
                         <td>${d.fecha_vencimiento}</td>
-                        <td style="text-align:right;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
-                        <td style="text-align:right; font-weight:700; color:var(--color-warning);">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
+                        <td style="text-align:right; white-space:nowrap;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
+                        <td style="text-align:right; font-weight:700; color:var(--color-warning); white-space:nowrap;">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
                         <td><span class="badge ${badg}">${d.estado}</span></td>
                         <td style="text-align:center;">${btnAbonar}</td>
                     </tr>
@@ -592,8 +592,8 @@ async function cargarCuentasGlobales() {
                     <tr>
                         <td style="font-weight:600;">${actor.nombre_razon_social}</td>
                         <td>${d.fecha_vencimiento}</td>
-                        <td style="text-align:right;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
-                        <td style="text-align:right; font-weight:700; color:var(--color-warning);">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
+                        <td style="text-align:right; white-space:nowrap;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
+                        <td style="text-align:right; font-weight:700; color:var(--color-warning); white-space:nowrap;">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
                         <td><span class="badge ${badg}">${d.estado}</span></td>
                         <td style="text-align:center;">${btnAbonar}</td>
                     </tr>

@@ -480,12 +480,14 @@
                 const v = ventas.find(x => x.id === c.venta_id);
                 c.documento = v ? `${v.serie_comprobante}-${v.correlativo_comprobante}` : '';
                 c.fecha = v ? v.fecha_venta : '';
+                c.moneda = v ? v.moneda : 'PEN';
             });
             
             por_pagar.forEach(p => {
                 const c = compras.find(x => x.id === p.compra_id);
                 p.documento = c ? `${c.serie_comprobante}-${c.correlativo_comprobante}` : '';
                 p.fecha = c ? c.fecha_compra : '';
+                p.moneda = c ? c.moneda : 'PEN';
             });
             
             return jsonResponse({ por_cobrar, por_pagar });

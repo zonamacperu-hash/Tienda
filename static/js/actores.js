@@ -296,16 +296,16 @@ async function verCuentasActor(actorId, actorNombre, actorTipo) {
                                         const badg = isPagado ? 'badge-success' : 'badge-danger';
                                         
                                         const btnAbonar = !isPagado 
-                                            ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="abrirModalAbono('cobrar', ${d.venta_id}, ${saldo}, ${actorId}, '${actorNombre.replace(/'/g, "\\'")}')">Abonar</button>`
+                                            ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="abrirModalAbono('cobrar', ${d.venta_id}, ${saldo}, ${actorId}, '${actorNombre.replace(/'/g, "\\'")}', '${d.moneda || 'PEN'}')">Abonar</button>`
                                             : '-';
                                             
                                         return `
                                             <tr>
                                                 <td style="font-weight:600;">${d.documento}</td>
                                                 <td>${d.fecha_vencimiento}</td>
-                                                <td style="text-align:right;">S/ ${d.monto_total.toFixed(2)}</td>
-                                                <td style="text-align:right; color:var(--color-success);">S/ ${d.monto_pagado.toFixed(2)}</td>
-                                                <td style="text-align:right; font-weight:700; color:var(--color-warning);">S/ ${saldo.toFixed(2)}</td>
+                                                <td style="text-align:right;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; color:var(--color-success);">${formatCurrency(d.monto_pagado, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; font-weight:700; color:var(--color-warning);">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
                                                 <td><span class="badge ${badg}">${d.estado}</span></td>
                                                 <td style="text-align:center;">${btnAbonar}</td>
                                             </tr>
@@ -349,16 +349,16 @@ async function verCuentasActor(actorId, actorNombre, actorTipo) {
                                         const badg = isPagado ? 'badge-success' : 'badge-danger';
                                         
                                         const btnAbonar = !isPagado 
-                                            ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="abrirModalAbono('pagar', ${d.compra_id}, ${saldo}, ${actorId}, '${actorNombre.replace(/'/g, "\\'")}')">Registrar Pago</button>`
+                                            ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="abrirModalAbono('pagar', ${d.compra_id}, ${saldo}, ${actorId}, '${actorNombre.replace(/'/g, "\\'")}', '${d.moneda || 'PEN'}')">Registrar Pago</button>`
                                             : '-';
                                             
                                         return `
                                             <tr>
                                                 <td style="font-weight:600;">${d.documento}</td>
                                                 <td>${d.fecha_vencimiento}</td>
-                                                <td style="text-align:right;">S/ ${d.monto_total.toFixed(2)}</td>
-                                                <td style="text-align:right; color:var(--color-success);">S/ ${d.monto_pagado.toFixed(2)}</td>
-                                                <td style="text-align:right; font-weight:700; color:var(--color-warning);">S/ ${saldo.toFixed(2)}</td>
+                                                <td style="text-align:right;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; color:var(--color-success);">${formatCurrency(d.monto_pagado, d.moneda || 'PEN')}</td>
+                                                <td style="text-align:right; font-weight:700; color:var(--color-warning);">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
                                                 <td><span class="badge ${badg}">${d.estado}</span></td>
                                                 <td style="text-align:center;">${btnAbonar}</td>
                                             </tr>
@@ -393,7 +393,7 @@ async function verCuentasActor(actorId, actorNombre, actorTipo) {
 /* ==============================================================================
    REGISTRAR ABONO (AMORTIZACIÓN DE DEUDA)
    ============================================================================== */
-function abrirModalAbono(tipo, referenciaId, saldoDeuda, actorId, actorNombre) {
+function abrirModalAbono(tipo, referenciaId, saldoDeuda, actorId, actorNombre, moneda = 'PEN') {
     closeModal('global-modal'); // Cerrar modal de estado de cuentas previo
     
     const titulo = tipo === 'cobrar' 
@@ -405,11 +405,14 @@ function abrirModalAbono(tipo, referenciaId, saldoDeuda, actorId, actorNombre) {
     const bodyHtml = `
         <form id="form-abono-modal">
             <div style="background-color:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2); padding:12px; border-radius:6px; margin-bottom:16px; font-size:0.85rem;">
-                Deuda pendiente de cobro: <strong>S/ ${saldoDeuda.toFixed(2)}</strong>
+                Deuda pendiente de cobro: <strong>${formatCurrency(saldoDeuda, moneda)}</strong>
             </div>
             <div class="form-group">
                 <label class="form-label" for="abono-monto">${labelDeuda}</label>
-                <input type="number" step="0.01" min="0.01" max="${saldoDeuda + 0.01}" class="form-input" id="abono-monto" value="${saldoDeuda.toFixed(2)}" required>
+                <div style="display: flex; align-items: stretch; border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; background-color: rgba(0,0,0,0.2);">
+                    <span style="display: flex; align-items: center; padding: 0 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); user-select: none;">${moneda === 'USD' ? '$' : 'S/'}</span>
+                    <input type="number" step="0.01" min="0.01" max="${saldoDeuda + 0.01}" class="pos-pago-input" id="abono-monto" value="${saldoDeuda.toFixed(2)}" required style="flex-grow: 1; text-align: right; background: none; border: none; outline: none; padding: 8px 12px; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label" for="abono-metodo-pago">Método de Pago</label>
@@ -560,15 +563,15 @@ async function cargarCuentasGlobales() {
                 const badg = isPagado ? 'badge-success' : 'badge-danger';
                 
                 const btnAbonar = !isPagado 
-                    ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="abrirModalAbono('cobrar', ${d.venta_id}, ${saldo}, ${actor.id}, '${actor.nombre_razon_social.replace(/'/g, "\\'")}')">Abonar</button>`
+                    ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="abrirModalAbono('cobrar', ${d.venta_id}, ${saldo}, ${actor.id}, '${actor.nombre_razon_social.replace(/'/g, "\\'")}', '${d.moneda || 'PEN'}')">Abonar</button>`
                     : '-';
 
                 cobrosHtml += `
                     <tr>
                         <td style="font-weight:600;">${actor.nombre_razon_social}</td>
                         <td>${d.fecha_vencimiento}</td>
-                        <td style="text-align:right;">S/ ${d.monto_total.toFixed(2)}</td>
-                        <td style="text-align:right; font-weight:700; color:var(--color-warning);">S/ ${saldo.toFixed(2)}</td>
+                        <td style="text-align:right;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
+                        <td style="text-align:right; font-weight:700; color:var(--color-warning);">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
                         <td><span class="badge ${badg}">${d.estado}</span></td>
                         <td style="text-align:center;">${btnAbonar}</td>
                     </tr>
@@ -582,15 +585,15 @@ async function cargarCuentasGlobales() {
                 const badg = isPagado ? 'badge-success' : 'badge-danger';
                 
                 const btnAbonar = !isPagado 
-                    ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="abrirModalAbono('pagar', ${d.compra_id}, ${saldo}, ${actor.id}, '${actor.nombre_razon_social.replace(/'/g, "\\'")}')">Pagar</button>`
+                    ? `<button class="btn btn-success" style="padding:4px 8px; font-size:0.75rem;" onclick="abrirModalAbono('pagar', ${d.compra_id}, ${saldo}, ${actor.id}, '${actor.nombre_razon_social.replace(/'/g, "\\'")}', '${d.moneda || 'PEN'}')">Pagar</button>`
                     : '-';
 
                 pagosHtml += `
                     <tr>
                         <td style="font-weight:600;">${actor.nombre_razon_social}</td>
                         <td>${d.fecha_vencimiento}</td>
-                        <td style="text-align:right;">S/ ${d.monto_total.toFixed(2)}</td>
-                        <td style="text-align:right; font-weight:700; color:var(--color-warning);">S/ ${saldo.toFixed(2)}</td>
+                        <td style="text-align:right;">${formatCurrency(d.monto_total, d.moneda || 'PEN')}</td>
+                        <td style="text-align:right; font-weight:700; color:var(--color-warning);">${formatCurrency(saldo, d.moneda || 'PEN')}</td>
                         <td><span class="badge ${badg}">${d.estado}</span></td>
                         <td style="text-align:center;">${btnAbonar}</td>
                     </tr>

@@ -1043,7 +1043,7 @@ async function imprimirOrdenIngresoPDF(ordenId) {
         printContainer.style.position = 'absolute';
         printContainer.style.left = '0';
         printContainer.style.top = '0';
-        printContainer.style.zIndex = '-9999';
+        printContainer.style.zIndex = '1';
         document.body.appendChild(printContainer);
         
         try {
@@ -1200,7 +1200,7 @@ async function imprimirOrdenSalidaPDF(ordenId) {
         printContainer.style.position = 'absolute';
         printContainer.style.left = '0';
         printContainer.style.top = '0';
-        printContainer.style.zIndex = '-9999';
+        printContainer.style.zIndex = '1';
         document.body.appendChild(printContainer);
         
         try {

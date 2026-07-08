@@ -419,11 +419,27 @@ async function exportarKardexPDF() {
             margin:       8,
             filename:     `Kardex_Movimientos_${new Date().toISOString().slice(0,10)}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2.5, useCORS: true },
+            html2canvas:  { 
+                scale: 2.5, 
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0
+            },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
         };
 
-        html2pdf().set(opt).from(printContainer).save();
+        printContainer.style.width = '1120px';
+        printContainer.style.position = 'absolute';
+        printContainer.style.left = '-9999px';
+        printContainer.style.top = '0';
+        document.body.appendChild(printContainer);
+        
+        try {
+            await html2pdf().set(opt).from(printContainer).save();
+        } finally {
+            printContainer.remove();
+        }
+        
         mostrarToast("PDF de Kárdex generado de forma profesional.", "success");
     } catch (err) {
         console.error(err);

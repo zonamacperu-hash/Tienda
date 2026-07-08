@@ -1031,15 +1031,25 @@ async function imprimirOrdenIngresoPDF(ordenId) {
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
                 scale: 2, 
-                useCORS: true
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         printContainer.style.width = '800px';
+        printContainer.style.position = 'absolute';
+        printContainer.style.left = '-9999px';
+        printContainer.style.top = '0';
+        document.body.appendChild(printContainer);
         
-        // Generar descarga PDF de forma asíncrona
-        await html2pdf().set(opt).from(printContainer).save();
+        try {
+            // Generar descarga PDF de forma asíncrona
+            await html2pdf().set(opt).from(printContainer).save();
+        } finally {
+            printContainer.remove();
+        }
     } catch (err) {
         console.error(err);
         mostrarToast("Error al exportar PDF de ingreso.", "danger");
@@ -1176,15 +1186,25 @@ async function imprimirOrdenSalidaPDF(ordenId) {
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
                 scale: 2, 
-                useCORS: true
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         printContainer.style.width = '800px';
+        printContainer.style.position = 'absolute';
+        printContainer.style.left = '-9999px';
+        printContainer.style.top = '0';
+        document.body.appendChild(printContainer);
         
-        // Generar descarga PDF de forma asíncrona
-        await html2pdf().set(opt).from(printContainer).save();
+        try {
+            // Generar descarga PDF de forma asíncrona
+            await html2pdf().set(opt).from(printContainer).save();
+        } finally {
+            printContainer.remove();
+        }
     } catch (err) {
         console.error(err);
         mostrarToast("Error al exportar PDF de garantía.", "danger");

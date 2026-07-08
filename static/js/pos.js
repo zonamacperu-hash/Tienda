@@ -1056,7 +1056,9 @@ async function imprimirComprobantePDF(ventaId) {
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
                 scale: esTicketOTermico ? 3 : 2, 
-                useCORS: true
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0
             },
             jsPDF:        esTicketOTermico 
                 ? { unit: 'mm', format: [80, 150 + detalles.length * 15], orientation: 'portrait' }
@@ -1064,16 +1066,24 @@ async function imprimirComprobantePDF(ventaId) {
         };
 
         printContainer.style.width = esTicketOTermico ? '300px' : '800px';
+        printContainer.style.position = 'absolute';
+        printContainer.style.left = '-9999px';
+        printContainer.style.top = '0';
+        document.body.appendChild(printContainer);
         
-        // Generar descarga PDF de forma asíncrona
-        await html2pdf().set(opt).from(printContainer).save();
+        try {
+            // Generar descarga PDF de forma asíncrona
+            await html2pdf().set(opt).from(printContainer).save();
+        } finally {
+            printContainer.remove();
+        }
         
         mostrarToast("Comprobante generado e impreso en PDF con éxito.", "success");
 
-    } catch (err) {
-        console.error(err);
-        mostrarToast("No se pudo generar el comprobante PDF.", "danger");
-    }
+     } catch (err) {
+         console.error(err);
+         mostrarToast("No se pudo generar el comprobante PDF.", "danger");
+     }
 }
 
 function validarPagosCombinados() {

@@ -430,8 +430,9 @@ async function exportarKardexPDF() {
 
         printContainer.style.width = '1120px';
         printContainer.style.position = 'absolute';
-        printContainer.style.left = '-9999px';
+        printContainer.style.left = '0';
         printContainer.style.top = '0';
+        printContainer.style.zIndex = '-9999';
         document.body.appendChild(printContainer);
         
         try {

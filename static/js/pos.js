@@ -1067,8 +1067,9 @@ async function imprimirComprobantePDF(ventaId) {
 
         printContainer.style.width = esTicketOTermico ? '300px' : '800px';
         printContainer.style.position = 'absolute';
-        printContainer.style.left = '-9999px';
+        printContainer.style.left = '0';
         printContainer.style.top = '0';
+        printContainer.style.zIndex = '-9999';
         document.body.appendChild(printContainer);
         
         try {

@@ -67,6 +67,8 @@ CREATE TABLE productos (
     precio_mayorista DECIMAL(12, 2) NOT NULL DEFAULT 0.00 CHECK (precio_mayorista >= 0), -- Mayorista
     precio_final DECIMAL(12, 2) NOT NULL DEFAULT 0.00 CHECK (precio_final >= 0), -- Precio al cliente final
     moneda VARCHAR(3) DEFAULT 'PEN' CHECK (moneda IN ('PEN', 'USD')), -- Moneda base del producto
+    detalles_tecnicos TEXT,
+    marca VARCHAR(100) DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

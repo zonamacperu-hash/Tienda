@@ -289,7 +289,7 @@ async function cargarDatosProductos() {
         if (select) {
             select.innerHTML = '<option value="">-- Seleccionar Producto --</option>' + 
                 productosCotizacion.map(p => `
-                    <option value="${p.id}">${p.nombre} (Stock: ${p.stock_actual} | ${p.moneda || 'PEN'} ${p.precio_final.toFixed(2)})</option>
+                    <option value="${p.id}">${p.nombre}${p.marca ? ` (${p.marca})` : ''} (Stock: ${p.stock_actual} | ${p.moneda || 'PEN'} ${p.precio_final.toFixed(2)})</option>
                 `).join('');
         }
     } catch (err) {

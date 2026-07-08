@@ -387,7 +387,8 @@
                     precio_mayorista: parseFloat(data.precio_mayorista || 0.0),
                     precio_final: parseFloat(data.precio_final || 0.0),
                     moneda: data.moneda || 'PEN',
-                    detalles_tecnicos: data.detalles_tecnicos || ''
+                    detalles_tecnicos: data.detalles_tecnicos || '',
+                    marca: data.marca || ''
                 });
                 return jsonResponse({ exito: true, id: prodId, mensaje: "Producto registrado con éxito." });
             }
@@ -418,7 +419,8 @@
                     precio_mayorista: parseFloat(data.precio_mayorista || 0.0),
                     precio_final: parseFloat(data.precio_final || 0.0),
                     moneda: data.moneda || 'PEN',
-                    detalles_tecnicos: data.detalles_tecnicos || ''
+                    detalles_tecnicos: data.detalles_tecnicos || '',
+                    marca: data.marca || ''
                 });
                 return jsonResponse({ exito: true, mensaje: "Producto actualizado con éxito." });
             }

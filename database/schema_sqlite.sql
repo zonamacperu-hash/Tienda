@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS productos (
     precio_final REAL NOT NULL DEFAULT 0.00 CHECK (precio_final >= 0), -- Precio al cliente final
     moneda TEXT DEFAULT 'PEN' CHECK (moneda IN ('PEN', 'USD')), -- Moneda base del producto
     detalles_tecnicos TEXT, -- Especificaciones del modelo
+    marca TEXT DEFAULT '',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );

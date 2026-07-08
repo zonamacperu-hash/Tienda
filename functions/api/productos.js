@@ -31,8 +31,8 @@ export async function onRequestPost(context) {
     const prodId = await executeDb(
       env,
       `INSERT INTO productos (
-         categoria_id, nombre, descripcion, maneja_series, stock_minimo, stock_actual, precio_base, precio_mayorista, precio_final, moneda, detalles_tecnicos
-       ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
+         categoria_id, nombre, descripcion, maneja_series, stock_minimo, stock_actual, precio_base, precio_mayorista, precio_final, moneda, detalles_tecnicos, marca
+       ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
       [
         data.categoria_id,
         data.nombre,
@@ -43,7 +43,8 @@ export async function onRequestPost(context) {
         data.precio_mayorista || 0.0,
         data.precio_final || 0.0,
         moneda,
-        data.detalles_tecnicos || ""
+        data.detalles_tecnicos || "",
+        data.marca || ""
       ]
     );
 

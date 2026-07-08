@@ -248,7 +248,7 @@ function abrirModalRegistrarPrestamo() {
                     <option value="">Seleccione Producto...</option>
                     ${prestamoProductosDisponibles.map(p => `
                         <option value="${p.id}" data-series="${p.maneja_series}" data-stock="${p.stock_actual}" data-moneda="${p.moneda || 'PEN'}">
-                            ${p.nombre} (Stock: ${p.stock_actual})
+                            ${p.nombre}${p.marca ? ` (${p.marca})` : ''} (Stock: ${p.stock_actual})
                         </option>
                     `).join('')}
                 </select>

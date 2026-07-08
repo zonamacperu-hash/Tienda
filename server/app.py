@@ -256,8 +256,8 @@ def productos():
             prod_id = execute_db(
                 """
                 INSERT INTO productos (
-                    categoria_id, nombre, descripcion, maneja_series, stock_minimo, stock_actual, precio_base, precio_mayorista, precio_final, moneda, detalles_tecnicos
-                ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
+                    categoria_id, nombre, descripcion, maneja_series, stock_minimo, stock_actual, precio_base, precio_mayorista, precio_final, moneda, detalles_tecnicos, marca
+                ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     data.get('categoria_id'),
@@ -269,7 +269,8 @@ def productos():
                     data.get('precio_mayorista', 0.0),
                     data.get('precio_final', 0.0),
                     moneda,
-                    data.get('detalles_tecnicos', '')
+                    data.get('detalles_tecnicos', ''),
+                    data.get('marca', '')
                 )
             )
             return jsonify({"exito": True, "id": prod_id, "mensaje": "Producto registrado con éxito."})
@@ -289,7 +290,7 @@ def producto_detalle(id):
                 """
                 UPDATE productos 
                 SET categoria_id = ?, nombre = ?, descripcion = ?, stock_minimo = ?,
-                    precio_base = ?, precio_mayorista = ?, precio_final = ?, moneda = ?, detalles_tecnicos = ?, updated_at = CURRENT_TIMESTAMP
+                    precio_base = ?, precio_mayorista = ?, precio_final = ?, moneda = ?, detalles_tecnicos = ?, marca = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
                 """,
                 (
@@ -302,6 +303,7 @@ def producto_detalle(id):
                     data.get('precio_final', 0.0),
                     moneda,
                     data.get('detalles_tecnicos', ''),
+                    data.get('marca', ''),
                     id
                 )
             )

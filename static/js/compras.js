@@ -243,7 +243,7 @@ async function inicializarCatalogosCompra() {
         
         const prodSelect = document.getElementById('compra-select-producto');
         prodSelect.innerHTML = '<option value="" disabled selected>Seleccione Producto</option>' + 
-            productosDisponibles.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            productosDisponibles.map(p => `<option value="${p.id}">${p.nombre}${p.marca ? ` (${p.marca})` : ''}</option>`).join('');
 
     } catch (err) {
         console.error(err);

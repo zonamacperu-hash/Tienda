@@ -39,6 +39,7 @@ async function renderInventario(container) {
                         <tr>
                             <th>ID</th>
                             <th>Categoría</th>
+                            <th>Marca</th>
                             <th>Nombre</th>
                             <th>Series</th>
                             <th style="text-align:right;">Stock Min.</th>
@@ -124,6 +125,7 @@ function renderTablaProductos(productos) {
             <tr>
                 <td>${p.id}</td>
                 <td style="font-size:0.8rem; color:var(--text-muted);">${p.categoria_nombre || 'Sin categoría'}</td>
+                <td style="font-size:0.8rem; color:var(--color-text-muted); font-weight:500;">${p.marca || '<span style="color:var(--color-text-muted); font-style:italic;">Genérico</span>'}</td>
                 <td style="font-weight:600;">${p.nombre}</td>
                 <td>${manejaSeriesBadge}</td>
                 <td style="text-align:right;">${p.stock_minimo}</td>
@@ -149,7 +151,9 @@ function filtrarProductos() {
     const catId = document.getElementById('filter-categoria').value;
 
     const filtrados = globalProductos.filter(p => {
-        const matchesQuery = p.nombre.toLowerCase().includes(query) || (p.descripcion && p.descripcion.toLowerCase().includes(query));
+        const matchesQuery = p.nombre.toLowerCase().includes(query) || 
+                             (p.descripcion && p.descripcion.toLowerCase().includes(query)) ||
+                             (p.marca && p.marca.toLowerCase().includes(query));
         const matchesCat = catId === "" || p.categoria_id === parseInt(catId);
         return matchesQuery && matchesCat;
     });
@@ -176,12 +180,18 @@ function abrirModalProducto(productoId = null) {
                 <label class="form-label" for="prod-nombre">Nombre del Producto</label>
                 <input type="text" class="form-input" id="prod-nombre" value="${isEdit ? prod.nombre : ''}" required>
             </div>
-            <div class="form-group">
-                <label class="form-label" for="prod-categoria">Categoría</label>
-                <select class="form-select" id="prod-categoria" required>
-                    <option value="" disabled selected>Seleccione categoría</option>
-                    ${optionsCategorias}
-                </select>
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label" for="prod-categoria">Categoría</label>
+                    <select class="form-select" id="prod-categoria" required>
+                        <option value="" disabled selected>Seleccione categoría</option>
+                        ${optionsCategorias}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="prod-marca">Marca</label>
+                    <input type="text" class="form-input" id="prod-marca" value="${isEdit ? prod.marca || '' : ''}" placeholder="Ej: Apple, Samsung, Ugreen...">
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label" for="prod-descripcion">Descripción / Notas</label>
@@ -264,6 +274,7 @@ function abrirModalProducto(productoId = null) {
         const payload = {
             nombre: document.getElementById('prod-nombre').value,
             categoria_id: parseInt(document.getElementById('prod-categoria').value),
+            marca: document.getElementById('prod-marca').value.trim(),
             descripcion: document.getElementById('prod-descripcion').value,
             precio_base: parseFloat(document.getElementById('prod-precio-costo').value),
             precio_mayorista: parseFloat(document.getElementById('prod-precio-mayorista').value),
@@ -481,6 +492,7 @@ function exportarInventarioExcel() {
         const dataExport = globalProductos.map(p => ({
             "ID Producto": p.id,
             "Categoría": p.categoria_nombre || "Sin Categoría",
+            "Marca": p.marca || "Genérico",
             "Nombre del Ítem": p.nombre,
             "Descripción": p.descripcion || "",
             "Trazabilidad": p.maneja_series === 1 ? "Control de Series" : "Numérico",
@@ -497,7 +509,7 @@ function exportarInventarioExcel() {
         const ws = XLSX.utils.json_to_sheet(dataExport);
 
         // Ajustar anchos de columnas
-        const max_len = [12, 24, 32, 32, 16, 12, 12, 12, 16, 16, 16, 20];
+        const max_len = [12, 24, 20, 32, 32, 16, 12, 12, 12, 16, 16, 16, 20];
         ws['!cols'] = max_len.map(w => ({ wch: w }));
 
         XLSX.utils.book_append_sheet(wb, ws, "Inventario de Stock");

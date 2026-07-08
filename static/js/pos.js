@@ -162,6 +162,7 @@ function renderCatalogoProductosPOS(productos) {
             <div class="product-pos-card ${outOfStockClass}" ${clickHandler}>
                 <div>
                     <div class="product-pos-name">${p.nombre}</div>
+                    ${p.marca ? `<div style="font-size:0.75rem; color:var(--color-text-muted); margin-bottom:4px; font-weight:500;">${p.marca}</div>` : ''}
                     <div class="product-pos-stock">Stock: ${stockDisponible} U.</div>
                 </div>
                 <div class="product-pos-footer">
@@ -199,7 +200,9 @@ function aplicarFiltrosCatalogo() {
     const query = searchInput.value.toLowerCase();
     
     const filtrados = productosCatalogo.filter(p => {
-        const matchesQuery = p.nombre.toLowerCase().includes(query) || (p.descripcion && p.descripcion.toLowerCase().includes(query));
+        const matchesQuery = p.nombre.toLowerCase().includes(query) || 
+                             (p.descripcion && p.descripcion.toLowerCase().includes(query)) ||
+                             (p.marca && p.marca.toLowerCase().includes(query));
         const matchesCat = categoriaPOSActiva === '' || p.categoria_id === parseInt(categoriaPOSActiva);
         return matchesQuery && matchesCat;
     });

@@ -268,7 +268,7 @@ function abrirCrearOrdenModal() {
     `).join('');
 
     const productosHtml = productosSeriesCatalog.map(p => `
-        <option value="${p.id}">${p.nombre}</option>
+        <option value="${p.id}">${p.nombre}${p.marca ? ` (${p.marca})` : ''}</option>
     `).join('');
 
     const bodyHtml = `
@@ -506,7 +506,7 @@ async function abrirDetallesOrdenModal(ordenId) {
 
         // Dropdown de productos disponibles para repuestos
         const repuestoOptionsHtml = repuestosDisponibles.map(p => `
-            <option value="${p.id}" data-precio="${p.precio_final}">${p.nombre} (Stock: ${p.stock_actual} U.)</option>
+            <option value="${p.id}" data-precio="${p.precio_final}">${p.nombre}${p.marca ? ` (${p.marca})` : ''} (Stock: ${p.stock_actual} U.)</option>
         `).join('');
 
         const bodyHtml = `
@@ -708,7 +708,7 @@ async function agregarRepuestoOrden() {
             
             // Re-render select para actualizar stock visual en dropdown
             const repOptionsHtml = repuestosDisponibles.map(p => `
-                <option value="${p.id}" data-precio="${p.precio_final}">${p.nombre} (Stock: ${p.stock_actual} U.)</option>
+                <option value="${p.id}" data-precio="${p.precio_final}">${p.nombre}${p.marca ? ` (${p.marca})` : ''} (Stock: ${p.stock_actual} U.)</option>
             `).join('');
             document.getElementById('soporte-repuesto-select').innerHTML = '<option value="" selected>Seleccione repuesto...</option>' + repOptionsHtml;
             document.getElementById('soporte-repuesto-cantidad').value = 1;
@@ -744,7 +744,7 @@ async function eliminarRepuestoOrden(repuestoId) {
             await cargarCatálogosSoporte();
             
             const repOptionsHtml = repuestosDisponibles.map(p => `
-                <option value="${p.id}" data-precio="${p.precio_final}">${p.nombre} (Stock: ${p.stock_actual} U.)</option>
+                <option value="${p.id}" data-precio="${p.precio_final}">${p.nombre}${p.marca ? ` (${p.marca})` : ''} (Stock: ${p.stock_actual} U.)</option>
             `).join('');
             document.getElementById('soporte-repuesto-select').innerHTML = '<option value="" selected>Seleccione repuesto...</option>' + repOptionsHtml;
         } else {

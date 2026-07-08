@@ -1058,14 +1058,15 @@ async function imprimirComprobantePDF(ventaId) {
                 scale: esTicketOTermico ? 3 : 2, 
                 useCORS: true,
                 scrollX: 0,
-                scrollY: 0
+                scrollY: 0,
+                windowWidth: esTicketOTermico ? 287 : 718
             },
             jsPDF:        esTicketOTermico 
                 ? { unit: 'mm', format: [80, 150 + detalles.length * 15], orientation: 'portrait' }
                 : { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        printContainer.style.width = esTicketOTermico ? '300px' : '800px';
+        printContainer.style.width = esTicketOTermico ? '287px' : '718px';
         printContainer.style.position = 'absolute';
         printContainer.style.left = '0';
         printContainer.style.top = '0';

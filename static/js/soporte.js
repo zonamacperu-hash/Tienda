@@ -1033,12 +1033,13 @@ async function imprimirOrdenIngresoPDF(ordenId) {
                 scale: 2, 
                 useCORS: true,
                 scrollX: 0,
-                scrollY: 0
+                scrollY: 0,
+                windowWidth: 718
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        printContainer.style.width = '800px';
+        printContainer.style.width = '718px';
         printContainer.style.position = 'absolute';
         printContainer.style.left = '0';
         printContainer.style.top = '0';
@@ -1189,12 +1190,13 @@ async function imprimirOrdenSalidaPDF(ordenId) {
                 scale: 2, 
                 useCORS: true,
                 scrollX: 0,
-                scrollY: 0
+                scrollY: 0,
+                windowWidth: 718
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        printContainer.style.width = '800px';
+        printContainer.style.width = '718px';
         printContainer.style.position = 'absolute';
         printContainer.style.left = '0';
         printContainer.style.top = '0';

@@ -423,12 +423,13 @@ async function exportarKardexPDF() {
                 scale: 2.5, 
                 useCORS: true,
                 scrollX: 0,
-                scrollY: 0
+                scrollY: 0,
+                windowWidth: 1062
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
         };
 
-        printContainer.style.width = '1120px';
+        printContainer.style.width = '1062px';
         printContainer.style.position = 'absolute';
         printContainer.style.left = '0';
         printContainer.style.top = '0';

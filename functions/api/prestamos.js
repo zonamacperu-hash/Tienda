@@ -87,7 +87,7 @@ export async function onRequestPost(context) {
       statements.push(
         env.DB.prepare(`
           INSERT INTO prestamo_detalles (prestamo_id, producto_id, cantidad, tipo_precio, precio_manual)
-          VALUES (last_insert_rowid(), ?, ?, ?, ?)
+          VALUES ((SELECT MAX(id) FROM prestamos_intertienda), ?, ?, ?, ?)
         `).bind(producto_id, cantidad, tipoPrecio, precioManual)
       );
 
@@ -117,7 +117,7 @@ export async function onRequestPost(context) {
           statements.push(
             env.DB.prepare(`
               UPDATE producto_series
-              SET estado = 'Prestado', prestamo_id = last_insert_rowid()
+              SET estado = 'Prestado', prestamo_id = (SELECT MAX(id) FROM prestamos_intertienda)
               WHERE id = ?
             `).bind(serie.id)
           );

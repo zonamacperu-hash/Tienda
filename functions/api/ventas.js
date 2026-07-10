@@ -260,7 +260,7 @@ export async function onRequestPost(context) {
         env.DB.prepare(`
           INSERT INTO venta_detalles (
             venta_id, producto_id, cantidad, tipo_precio, precio_unitario, meses_garantia, subtotal
-          ) VALUES (last_insert_rowid(), ?, ?, ?, ?, ?, ?)
+          ) VALUES ((SELECT MAX(id) FROM ventas), ?, ?, ?, ?, ?, ?)
         `).bind(
           det.producto_id,
           det.cantidad,
@@ -276,7 +276,7 @@ export async function onRequestPost(context) {
     for (const s of seriesAActualizar) {
       const nuevoEstado = s.meses_garantia > 0 ? "En Garantia" : "Vendido";
       statements.push(
-        env.DB.prepare("UPDATE producto_series SET estado = ?, venta_id = last_insert_rowid() WHERE id = ?").bind(nuevoEstado, s.serie_id)
+        env.DB.prepare("UPDATE producto_series SET estado = ?, venta_id = (SELECT MAX(id) FROM ventas) WHERE id = ?").bind(nuevoEstado, s.serie_id)
       );
     }
 
@@ -380,7 +380,7 @@ export async function onRequestPost(context) {
           statements.push(
             env.DB.prepare(`
               INSERT INTO venta_pagos (venta_id, metodo_pago, monto, moneda)
-              VALUES (last_insert_rowid(), ?, ?, ?)
+              VALUES ((SELECT MAX(id) FROM ventas), ?, ?, ?)
             `).bind(metodo, monto, datosVenta.moneda)
           );
         }

@@ -114,7 +114,7 @@ export async function onRequestPost(context) {
       statements.push(
         env.DB.prepare(`
           INSERT INTO compra_detalles (compra_id, producto_id, cantidad, precio_unitario, subtotal)
-          VALUES (last_insert_rowid(), ?, ?, ?, ?)
+          VALUES ((SELECT MAX(id) FROM compras), ?, ?, ?, ?)
         `).bind(prod_id, qty, precio_un, item_sub)
       );
 
@@ -138,7 +138,7 @@ export async function onRequestPost(context) {
           statements.push(
             env.DB.prepare(`
               INSERT INTO producto_series (producto_id, numero_serie, estado, compra_id, detalles_individuales)
-              VALUES (?, ?, 'Disponible', last_insert_rowid(), ?)
+              VALUES (?, ?, 'Disponible', (SELECT MAX(id) FROM compras), ?)
             `).bind(prod_id, sn, det_ind)
           );
         }
@@ -153,7 +153,7 @@ export async function onRequestPost(context) {
       statements.push(
         env.DB.prepare(`
           INSERT INTO cuentas_por_pagar (compra_id, proveedor_id, monto_total, monto_pagado, fecha_vencimiento, estado)
-          VALUES (last_insert_rowid(), ?, ?, 0.00, ?, 'Pendiente')
+          VALUES ((SELECT MAX(id) FROM compras), ?, ?, 0.00, ?, 'Pendiente')
         `).bind(proveedor_id, total, fecha_vencimiento)
       );
     }

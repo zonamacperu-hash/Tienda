@@ -940,7 +940,8 @@ async function imprimirComprobantePDF(ventaId) {
         }
 
         const esNotaVenta = venta.tipo_comprobante === 'Nota de Venta';
-        const esTicketOTermico = venta.tipo_comprobante === 'Ticket' || esNotaVenta;
+        // Forzar formato A4 para todos los comprobantes (Factura, Boleta, Nota de Venta) ya que se imprime en A4 tradicional
+        const esTicketOTermico = false;
         
         const tituloComprobante = esNotaVenta ? 'NOTA DE VENTA' : `${venta.tipo_comprobante} Electronica`;
         const pieRepresentacion = esNotaVenta 
@@ -1054,33 +1055,41 @@ async function imprimirComprobantePDF(ventaId) {
         `;
 
         const opt = {
-            margin:       esTicketOTermico ? 2 : 10,
+            margin:       10,
             filename:     `Comprobante_${venta.serie_comprobante}-${venta.correlativo_comprobante}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
-                scale: esTicketOTermico ? 3 : 2, 
+                scale: 2, 
                 useCORS: true,
                 scrollX: 0,
                 scrollY: 0,
-                windowWidth: esTicketOTermico ? 287 : 718
+                windowWidth: 718
             },
-            jsPDF:        esTicketOTermico 
-                ? { unit: 'mm', format: [80, 150 + detalles.length * 15], orientation: 'portrait' }
-                : { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        printContainer.style.width = esTicketOTermico ? '287px' : '718px';
+        printContainer.style.width = '718px';
         printContainer.style.position = 'absolute';
         printContainer.style.left = '0';
         printContainer.style.top = '0';
-        printContainer.style.zIndex = '1';
+        printContainer.style.zIndex = '99999';
+        printContainer.style.background = 'white';
         document.body.appendChild(printContainer);
         
+        // Guardar la posición de scroll actual y desplazar al inicio para evitar capturas desplazadas
+        const originalScrollY = window.scrollY;
+        const originalScrollX = window.scrollX;
+        window.scrollTo(0, 0);
+        
         try {
+            // Esperar 150ms para que el navegador complete el layout y renderizado del nuevo elemento en el DOM
+            await new Promise(resolve => setTimeout(resolve, 150));
             // Generar descarga PDF de forma asíncrona
             await html2pdf().set(opt).from(printContainer).save();
         } finally {
             printContainer.remove();
+            // Restaurar la posición de scroll original
+            window.scrollTo(originalScrollX, originalScrollY);
         }
         
         mostrarToast("Comprobante generado e impreso en PDF con éxito.", "success");

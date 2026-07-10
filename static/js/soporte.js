@@ -1043,14 +1043,24 @@ async function imprimirOrdenIngresoPDF(ordenId) {
         printContainer.style.position = 'absolute';
         printContainer.style.left = '0';
         printContainer.style.top = '0';
-        printContainer.style.zIndex = '1';
+        printContainer.style.zIndex = '99999';
+        printContainer.style.background = 'white';
         document.body.appendChild(printContainer);
         
+        // Guardar la posición de scroll actual y desplazar al inicio para evitar capturas desplazadas
+        const originalScrollY = window.scrollY;
+        const originalScrollX = window.scrollX;
+        window.scrollTo(0, 0);
+        
         try {
+            // Esperar 150ms para que el navegador complete el layout y renderizado del nuevo elemento en el DOM
+            await new Promise(resolve => setTimeout(resolve, 150));
             // Generar descarga PDF de forma asíncrona
             await html2pdf().set(opt).from(printContainer).save();
         } finally {
             printContainer.remove();
+            // Restaurar la posición de scroll original
+            window.scrollTo(originalScrollX, originalScrollY);
         }
     } catch (err) {
         console.error(err);
@@ -1200,14 +1210,24 @@ async function imprimirOrdenSalidaPDF(ordenId) {
         printContainer.style.position = 'absolute';
         printContainer.style.left = '0';
         printContainer.style.top = '0';
-        printContainer.style.zIndex = '1';
+        printContainer.style.zIndex = '99999';
+        printContainer.style.background = 'white';
         document.body.appendChild(printContainer);
         
+        // Guardar la posición de scroll actual y desplazar al inicio para evitar capturas desplazadas
+        const originalScrollY = window.scrollY;
+        const originalScrollX = window.scrollX;
+        window.scrollTo(0, 0);
+        
         try {
+            // Esperar 150ms para que el navegador complete el layout y renderizado del nuevo elemento en el DOM
+            await new Promise(resolve => setTimeout(resolve, 150));
             // Generar descarga PDF de forma asíncrona
             await html2pdf().set(opt).from(printContainer).save();
         } finally {
             printContainer.remove();
+            // Restaurar la posición de scroll original
+            window.scrollTo(originalScrollX, originalScrollY);
         }
     } catch (err) {
         console.error(err);

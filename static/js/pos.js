@@ -1069,27 +1069,36 @@ async function imprimirComprobantePDF(ventaId) {
         };
 
         printContainer.style.width = '718px';
-        printContainer.style.position = 'absolute';
+        printContainer.style.position = 'fixed';
         printContainer.style.left = '0';
         printContainer.style.top = '0';
         printContainer.style.zIndex = '99999';
         printContainer.style.background = 'white';
         document.body.appendChild(printContainer);
         
-        // Guardar la posición de scroll actual y desplazar al inicio para evitar capturas desplazadas
+        // Guardar la posición de scroll y desactivar comportamiento suave temporalmente
         const originalScrollY = window.scrollY;
         const originalScrollX = window.scrollX;
+        const originalHtmlScrollBehavior = document.documentElement.style.scrollBehavior;
+        const originalBodyScrollBehavior = document.body.style.scrollBehavior;
+        
+        document.documentElement.style.scrollBehavior = 'auto';
+        document.body.style.scrollBehavior = 'auto';
         window.scrollTo(0, 0);
         
         try {
-            // Esperar 150ms para que el navegador complete el layout y renderizado del nuevo elemento en el DOM
-            await new Promise(resolve => setTimeout(resolve, 150));
+            // Esperar 300ms para que el navegador complete el layout y renderizado
+            await new Promise(resolve => setTimeout(resolve, 300));
             // Generar descarga PDF de forma asíncrona
             await html2pdf().set(opt).from(printContainer).save();
+            // Retardo de seguridad de 500ms antes de limpiar el DOM para asegurar renderizado final
+            await new Promise(resolve => setTimeout(resolve, 500));
         } finally {
             printContainer.remove();
-            // Restaurar la posición de scroll original
+            // Restaurar scroll y su comportamiento original
             window.scrollTo(originalScrollX, originalScrollY);
+            document.documentElement.style.scrollBehavior = originalHtmlScrollBehavior;
+            document.body.style.scrollBehavior = originalBodyScrollBehavior;
         }
         
         mostrarToast("Comprobante generado e impreso en PDF con éxito.", "success");

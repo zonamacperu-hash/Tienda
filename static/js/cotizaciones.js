@@ -825,44 +825,36 @@ async function generarPDFCotizacion() {
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true,
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: 718
+                logging: false
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        printContainer.style.width = '718px';
-        printContainer.style.position = 'fixed';
-        printContainer.style.left = '0';
-        printContainer.style.top = '0';
-        printContainer.style.zIndex = '99999';
-        printContainer.style.background = 'white';
-        document.body.appendChild(printContainer);
-        
-        // Guardar la posición de scroll y desactivar comportamiento suave temporalmente
-        const originalScrollY = window.scrollY;
-        const originalScrollX = window.scrollX;
-        const originalHtmlScrollBehavior = document.documentElement.style.scrollBehavior;
-        const originalBodyScrollBehavior = document.body.style.scrollBehavior;
-        
-        document.documentElement.style.scrollBehavior = 'auto';
-        document.body.style.scrollBehavior = 'auto';
-        window.scrollTo(0, 0);
+        // Crear el Wrapper Temporal con posicionamiento fijo fuera de pantalla
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '-9999px'; // Lo saca por completo de la pantalla
+        wrapper.style.top = '0';
+        wrapper.style.height = 'auto';
+        wrapper.style.overflow = 'visible';
+        wrapper.style.zIndex = '-9999';
+        wrapper.style.pointerEvents = 'none';
+        wrapper.style.width = '700px';
+
+        printContainer.style.width = '700px';
+        printContainer.style.backgroundColor = 'white';
+        printContainer.style.color = '#1f2937';
+
+        wrapper.appendChild(printContainer);
+        document.body.appendChild(wrapper);
         
         try {
             // Esperar 300ms para que el navegador complete el layout y renderizado
             await new Promise(resolve => setTimeout(resolve, 300));
             // Generar descarga PDF de forma asíncrona
             await html2pdf().set(opt).from(printContainer).save();
-            // Retardo de seguridad de 500ms antes de limpiar el DOM para asegurar renderizado final
-            await new Promise(resolve => setTimeout(resolve, 500));
         } finally {
-            printContainer.remove();
-            // Restaurar scroll y su comportamiento original
-            window.scrollTo(originalScrollX, originalScrollY);
-            document.documentElement.style.scrollBehavior = originalHtmlScrollBehavior;
-            document.body.style.scrollBehavior = originalBodyScrollBehavior;
+            document.body.removeChild(wrapper);
         }
         
         mostrarToast("PDF de Cotización descargado con éxito.", "success");

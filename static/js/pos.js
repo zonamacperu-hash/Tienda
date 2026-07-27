@@ -9,6 +9,27 @@ let productosCatalogo = [];
 let categoriasCatalogo = [];
 let categoriaPOSActiva = '';
 
+function getCategoryIcon(name) {
+    const lower = name.toLowerCase();
+    if (lower.includes('acc') || lower.includes('periferico') || lower.includes('case')) return 'headphones';
+    if (lower.includes('cab') || lower.includes('usb')) return 'cable';
+    if (lower.includes('carg') || lower.includes('plug') || lower.includes('charger')) return 'plug';
+    if (lower.includes('lap') || lower.includes('notebook')) return 'laptop';
+    if (lower.includes('pow') || lower.includes('bater') || lower.includes('powerbank')) return 'battery-charging';
+    if (lower.includes('tel') || lower.includes('cel') || lower.includes('iphone') || lower.includes('smartphone')) return 'smartphone';
+    if (lower.includes('ipad') || lower.includes('tab')) return 'tablet';
+    if (lower.includes('monit') || lower.includes('pantalla')) return 'monitor';
+    if (lower.includes('aud') || lower.includes('parlante') || lower.includes('sound')) return 'volume-2';
+    return 'package'; // default
+}
+
+function scrollCategoriesPOS(direction) {
+    const container = document.getElementById('pos-category-tabs');
+    if (container) {
+        container.scrollBy({ left: direction, behavior: 'smooth' });
+    }
+}
+
 async function renderPOS(container) {
     container.innerHTML = `
         <div class="pos-layout">
@@ -21,9 +42,19 @@ async function renderPOS(container) {
                     </div>
                 </div>
                 
-                <!-- Pestañas de categorías -->
-                <div class="category-tabs" id="pos-category-tabs">
-                    <div class="category-tab active" onclick="filtrarCategoriaPOS('')">Todas</div>
+                <!-- Pestañas de categorías con navegación por botones -->
+                <div class="category-tabs-wrapper">
+                    <button type="button" class="scroll-btn scroll-left" onclick="scrollCategoriesPOS(-150)" title="Desplazar izquierda">
+                        <i data-lucide="chevron-left" style="width:16px; height:16px;"></i>
+                    </button>
+                    <div class="category-tabs" id="pos-category-tabs">
+                        <div class="category-tab active" id="tab-cat-all" onclick="filtrarCategoriaPOS('')">
+                            <i data-lucide="layout-grid" style="width:14px; height:14px;"></i> Todas
+                        </div>
+                    </div>
+                    <button type="button" class="scroll-btn scroll-right" onclick="scrollCategoriesPOS(150)" title="Desplazar derecha">
+                        <i data-lucide="chevron-right" style="width:16px; height:16px;"></i>
+                    </button>
                 </div>
 
                 <!-- Grid de productos -->
@@ -124,8 +155,8 @@ async function inicializarCatalogosPOS() {
         categoriasCatalogo = await resCats.json();
         
         const tabsContainer = document.getElementById('pos-category-tabs');
-        tabsContainer.innerHTML = '<div class="category-tab active" id="tab-cat-all" onclick="filtrarCategoriaPOS(\'\')">Todas</div>' + 
-            categoriasCatalogo.map(c => `<div class="category-tab" id="tab-cat-${c.id}" onclick="filtrarCategoriaPOS(${c.id})">${c.nombre}</div>`).join('');
+        tabsContainer.innerHTML = '<div class="category-tab active" id="tab-cat-all" onclick="filtrarCategoriaPOS(\'\')"><i data-lucide="layout-grid" style="width:14px; height:14px;"></i> Todas</div>' + 
+            categoriasCatalogo.map(c => `<div class="category-tab" id="tab-cat-${c.id}" onclick="filtrarCategoriaPOS(${c.id})"><i data-lucide="${getCategoryIcon(c.nombre)}" style="width:14px; height:14px;"></i> ${c.nombre}</div>`).join('');
 
         // 3. Productos
         const resProds = await fetch(`${API_URL}/api/productos`);
@@ -151,19 +182,33 @@ function renderCatalogoProductosPOS(productos) {
         const stockDisponible = p.stock_actual - cantEnCarrito;
         const outOfStockClass = stockDisponible <= 0 ? 'out-of-stock' : '';
         const badgeSeries = p.maneja_series === 1 
-            ? '<span class="badge badge-info product-pos-badge">Series</span>' 
+            ? '<span class="badge badge-info product-pos-badge"><i data-lucide="scan" style="width:12px; height:12px; margin-right:2px; display:inline-block; vertical-align:middle;"></i> Series</span>' 
             : '';
 
         const clickHandler = stockDisponible > 0 
             ? `onclick="agregarAlCarritoPOS(${p.id})"` 
             : 'onclick="mostrarToast(\'Producto sin stock físico disponible\', \'warning\')"';
 
+        // Determinar clase de stock coloreada y texto (Umbral stock bajo < 2)
+        let stockClass = 'stock-high';
+        let stockLabel = 'Stock: ' + stockDisponible + ' U.';
+        if (stockDisponible <= 0) {
+            stockClass = 'stock-out';
+            stockLabel = 'Agotado';
+        } else if (stockDisponible < 2) {
+            stockClass = 'stock-low';
+            stockLabel = '¡Última Unidad!';
+        }
+
         return `
             <div class="product-pos-card ${outOfStockClass}" ${clickHandler}>
                 <div>
-                    <div class="product-pos-name">${p.nombre}</div>
-                    ${p.marca ? `<div style="font-size:0.75rem; color:var(--color-text-muted); margin-bottom:4px; font-weight:500;">${p.marca}</div>` : ''}
-                    <div class="product-pos-stock">Stock: ${stockDisponible} U.</div>
+                    <div class="product-pos-name" title="${p.nombre}">${p.nombre}</div>
+                    ${p.marca ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; font-weight:500;">${p.marca}</div>` : ''}
+                    <div class="product-pos-stock ${stockClass}">
+                        <i data-lucide="${stockDisponible <= 0 ? 'alert-triangle' : (stockDisponible < 2 ? 'alert-circle' : 'check-circle')}" style="width:12px; height:12px; display:inline-block; vertical-align:middle;"></i>
+                        <span>${stockLabel}</span>
+                    </div>
                 </div>
                 <div class="product-pos-footer">
                     <div class="product-pos-price">${formatCurrency(p.precio_final, p.moneda || 'PEN')}</div>
@@ -172,6 +217,9 @@ function renderCatalogoProductosPOS(productos) {
             </div>
         `;
     }).join('');
+
+    // Refrescar iconos de Lucide en el catálogo
+    lucide.createIcons();
 }
 
 function filtrarCategoriaPOS(catId) {

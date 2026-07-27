@@ -23,24 +23,76 @@
     gap: 12px;
 }
 
+/* Contenedor wrapper de categorías con botones de navegación */
+.category-tabs-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.category-tabs-wrapper .scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    background-color: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.category-tabs-wrapper .scroll-btn:hover {
+    background-color: var(--color-primary);
+    color: var(--text-inverse);
+    border-color: var(--color-primary);
+}
+
+.category-tabs-wrapper .scroll-btn.scroll-left {
+    left: 0;
+}
+
+.category-tabs-wrapper .scroll-btn.scroll-right {
+    right: 0;
+}
+
 .category-tabs {
     display: flex;
     gap: 8px;
     overflow-x: auto;
-    padding-bottom: 8px;
+    scroll-behavior: smooth;
+    width: 100%;
+    padding: 4px 34px 12px 34px; /* Deja espacio para los botones */
+    margin-bottom: -8px; /* Compensa el padding inferior */
+    scrollbar-width: none; /* Firefox */
+}
+
+.category-tabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .category-tab {
-    padding: 8px 16px;
+    padding: 8px 14px;
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     white-space: nowrap;
     transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .category-tab:hover {
@@ -76,17 +128,19 @@
     transition: all var(--transition-fast);
     position: relative;
     overflow: hidden;
+    min-height: 135px; /* Altura mínima garantizada */
 }
 
 .product-pos-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
     border-color: var(--color-primary);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.15);
 }
 
 .product-pos-card.out-of-stock {
-    opacity: 0.6;
+    opacity: 0.55;
     cursor: not-allowed;
+    background-color: rgba(255, 255, 255, 0.01);
 }
 
 .product-pos-card.out-of-stock:hover {
@@ -108,20 +162,44 @@
 }
 
 .product-pos-name {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 700;
-    margin-bottom: 8px;
-    line-height: 1.3;
+    margin-bottom: 6px;
+    line-height: 1.35;
+    color: var(--text-main);
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Máximo 2 líneas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 2.7em; /* Altura fija para que la tarjeta no cambie de tamaño si hay 1 o 2 líneas */
 }
 
+/* Colores de stock dinámicos */
 .product-pos-stock {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-bottom: 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-top: 2px;
+    margin-bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.product-pos-stock.stock-high {
+    color: var(--color-success);
+}
+
+.product-pos-stock.stock-low {
+    color: var(--color-warning);
+}
+
+.product-pos-stock.stock-out {
+    color: var(--color-danger);
 }
 
 .product-pos-price {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: var(--color-success);
 }

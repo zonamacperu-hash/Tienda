@@ -279,6 +279,10 @@ function abrirModalRegistrarPrestamo() {
                             <option value="Base">Mayorista</option>
                             <option value="Manual">Manual</option>
                         </select>
+                        <div id="prestamo-precio-indicador" style="font-size:0.75rem; color:var(--color-primary); margin-top:6px; display:none; align-items:center; gap:4px;">
+                            <i data-lucide="info" style="width:14px; height:14px;"></i>
+                            <span id="prestamo-precio-indicador-val"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -396,6 +400,7 @@ function inicializarEventosPrestamos() {
                 document.getElementById('prestamo-series-section').style.display = 'none';
                 prestamoProductoActivoManejaSeries = false;
                 prestamoProductoActivoId = null;
+                resetSelectPrecioOptions();
                 return;
             }
 
@@ -418,6 +423,8 @@ function inicializarEventosPrestamos() {
             } else {
                 document.getElementById('prestamo-series-section').style.display = 'none';
             }
+
+            actualizarSelectPrecioOptions();
         });
     }
 
@@ -434,6 +441,7 @@ function inicializarEventosPrestamos() {
             } else {
                 groupPrecioManual.style.display = 'none';
             }
+            actualizarPrecioIndicador();
         });
     }
 
@@ -508,6 +516,7 @@ function inicializarEventosPrestamos() {
             document.getElementById('prestamo-precio-manual').value = "0.00";
             groupPrecioManual.style.display = 'none';
             document.getElementById('prestamo-series-section').style.display = 'none';
+            resetSelectPrecioOptions();
             
             prestamoSeriesSeleccionadas = [];
             prestamoProductoActivoManejaSeries = false;
@@ -585,6 +594,96 @@ function inicializarEventosPrestamos() {
                 }
             }
         });
+    }
+}
+
+function actualizarSelectPrecioOptions() {
+    const selectProd = document.getElementById('prestamo-producto');
+    const selectTipoPrecio = document.getElementById('prestamo-tipo-precio');
+    if (!selectProd || !selectTipoPrecio) return;
+
+    const prodId = parseInt(selectProd.value);
+    if (!prodId) {
+        resetSelectPrecioOptions();
+        return;
+    }
+
+    const prod = prestamoProductosDisponibles.find(p => p.id === prodId);
+    if (!prod) return;
+
+    const moneda = prod.moneda || 'PEN';
+    const precioFinalFormateado = formatCurrency(prod.precio_final, moneda);
+    const precioMayoristaFormateado = formatCurrency(prod.precio_mayorista, moneda);
+
+    const valorSeleccionado = selectTipoPrecio.value;
+
+    selectTipoPrecio.innerHTML = `
+        <option value="Final" ${valorSeleccionado === 'Final' ? 'selected' : ''}>Público (${precioFinalFormateado})</option>
+        <option value="Base" ${valorSeleccionado === 'Base' ? 'selected' : ''}>Mayorista (${precioMayoristaFormateado})</option>
+        <option value="Manual" ${valorSeleccionado === 'Manual' ? 'selected' : ''}>Manual</option>
+    `;
+
+    actualizarPrecioIndicador();
+}
+
+function resetSelectPrecioOptions() {
+    const selectTipoPrecio = document.getElementById('prestamo-tipo-precio');
+    if (selectTipoPrecio) {
+        selectTipoPrecio.innerHTML = `
+            <option value="Final">Público</option>
+            <option value="Base">Mayorista</option>
+            <option value="Manual">Manual</option>
+        `;
+    }
+    const precioIndicador = document.getElementById('prestamo-precio-indicador');
+    if (precioIndicador) {
+        precioIndicador.style.display = 'none';
+    }
+    const precioIndicadorVal = document.getElementById('prestamo-precio-indicador-val');
+    if (precioIndicadorVal) {
+        precioIndicadorVal.textContent = '';
+    }
+}
+
+function actualizarPrecioIndicador() {
+    const selectProd = document.getElementById('prestamo-producto');
+    const selectTipoPrecio = document.getElementById('prestamo-tipo-precio');
+    const precioIndicador = document.getElementById('prestamo-precio-indicador');
+    const precioIndicadorVal = document.getElementById('prestamo-precio-indicador-val');
+    
+    if (!selectProd || !selectTipoPrecio || !precioIndicador || !precioIndicadorVal) return;
+
+    const prodId = parseInt(selectProd.value);
+    if (!prodId) {
+        precioIndicador.style.display = 'none';
+        return;
+    }
+
+    const prod = prestamoProductosDisponibles.find(p => p.id === prodId);
+    if (!prod) {
+        precioIndicador.style.display = 'none';
+        return;
+    }
+
+    const tipoPrecio = selectTipoPrecio.value;
+    const moneda = prod.moneda || 'PEN';
+
+    precioIndicador.style.display = 'flex';
+
+    if (tipoPrecio === 'Final') {
+        const val = formatCurrency(prod.precio_final, moneda);
+        precioIndicadorVal.innerHTML = `Público: <strong style="color:var(--text-main);">${val}</strong>`;
+    } else if (tipoPrecio === 'Base') {
+        const val = formatCurrency(prod.precio_mayorista, moneda);
+        precioIndicadorVal.innerHTML = `Mayorista: <strong style="color:var(--text-main);">${val}</strong>`;
+    } else if (tipoPrecio === 'Manual') {
+        const valFinal = formatCurrency(prod.precio_final, moneda);
+        const valMayorista = formatCurrency(prod.precio_mayorista, moneda);
+        precioIndicadorVal.innerHTML = `<span style="font-weight:normal; color:var(--text-muted);">Ref:</span> Público: <strong>${valFinal}</strong> <span style="color:var(--border-color); margin:0 4px;">|</span> Mayorista: <strong>${valMayorista}</strong>`;
+    }
+    
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
     }
 }
 

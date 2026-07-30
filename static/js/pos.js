@@ -1109,16 +1109,18 @@ async function imprimirComprobantePDF(ventaId) {
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true,
-                logging: false
+                logging: false,
+                scrollX: 0,
+                scrollY: 0
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Crear el Wrapper Temporal con posicionamiento fijo fuera de pantalla
+        // Crear el Wrapper Temporal con posicionamiento absoluto detrás de pantalla
         const wrapper = document.createElement('div');
-        wrapper.style.position = 'fixed';
-        wrapper.style.left = '-9999px'; // Lo saca por completo de la pantalla
-        wrapper.style.top = '0';
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = '0';
+        wrapper.style.top = `${window.scrollY}px`; // Alinear con el scroll actual del usuario
         wrapper.style.height = 'auto';
         wrapper.style.overflow = 'visible';
         wrapper.style.zIndex = '-9999';

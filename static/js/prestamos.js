@@ -10,6 +10,7 @@ let prestamoClientesDisponibles = [];
 let prestamoSeriesSeleccionadas = [];
 let prestamoProductoActivoManejaSeries = false;
 let prestamoProductoActivoId = null;
+let prestamoItemsList = []; // Lista temporal de ítems a prestar en la carga actual
 
 async function renderPrestamos(container) {
     // 1. Cargar datos necesarios
@@ -229,65 +230,97 @@ function abrirModalRegistrarPrestamo() {
     prestamoSeriesSeleccionadas = [];
     prestamoProductoActivoManejaSeries = false;
     prestamoProductoActivoId = null;
+    prestamoItemsList = []; // Reiniciar la lista de ítems
 
     const bodyHtml = `
         <form id="form-registrar-prestamo" style="display:flex; flex-direction:column; gap:16px;">
-            <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" for="prestamo-tienda">Tienda Aliada (Socio Comercial)</label>
-                <select class="form-select" id="prestamo-tienda" required style="width:100%;">
-                    <option value="">Seleccione Tienda Destino...</option>
-                    ${prestamoClientesDisponibles.map(c => `
-                        <option value="${c.id}">${c.nombre_razon_social} (${c.documento_identidad})</option>
-                    `).join('')}
-                </select>
-            </div>
-
-            <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" for="prestamo-producto">Producto a Enviar</label>
-                <select class="form-select" id="prestamo-producto" required style="width:100%;">
-                    <option value="">Seleccione Producto...</option>
-                    ${prestamoProductosDisponibles.map(p => `
-                        <option value="${p.id}" data-series="${p.maneja_series}" data-stock="${p.stock_actual}" data-moneda="${p.moneda || 'PEN'}">
-                            ${p.nombre}${p.marca ? ` (${p.marca})` : ''} (Stock: ${p.stock_actual})
-                        </option>
-                    `).join('')}
-                </select>
-            </div>
-
-            <div class="form-grid-2">
+            <!-- Datos de Cabecera -->
+            <div style="display:grid; grid-template-columns:1fr; gap:12px; border-bottom:1px solid var(--border-color); padding-bottom:14px;">
                 <div class="form-group" style="margin-bottom:0;">
-                    <label class="form-label" for="prestamo-cantidad">Cantidad a Prestar</label>
-                    <input type="number" min="1" class="form-input" id="prestamo-cantidad" value="1" required style="width:100%;">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label class="form-label" for="prestamo-tipo-precio">Seleccionar Precio</label>
-                    <select class="form-select" id="prestamo-tipo-precio" required style="width:100%;">
-                        <option value="Final">Público</option>
-                        <option value="Base">Mayorista</option>
-                        <option value="Manual">Manual</option>
+                    <label class="form-label" for="prestamo-tienda">Tienda Aliada (Socio Comercial)</label>
+                    <select class="form-select" id="prestamo-tienda" required style="width:100%;">
+                        <option value="">Seleccione Tienda Destino...</option>
+                        ${prestamoClientesDisponibles.map(c => `
+                            <option value="${c.id}">${c.nombre_razon_social} (${c.documento_identidad})</option>
+                        `).join('')}
                     </select>
                 </div>
-            </div>
-
-            <div class="form-group" id="prestamo-precio-manual-group" style="display:none; margin-bottom:0;">
-                <label class="form-label" for="prestamo-precio-manual">Precio Manual (S/)</label>
-                <input type="number" step="0.01" min="0" class="form-input" id="prestamo-precio-manual" value="0.00" style="width:100%;">
-            </div>
-
-            <!-- Selector de series físicas (Sólo si maneja_series = 1) -->
-            <div id="prestamo-series-section" style="display:none; flex-direction:column; gap:8px; background:rgba(0,0,0,0.15); padding:14px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
-                <span style="font-size:0.8rem; font-weight:600; color:var(--color-warning);">Seleccione Números de Serie:</span>
-                <div id="prestamo-series-count" style="font-size:0.75rem; color:var(--text-muted);">
-                    Seleccionadas: <span id="prestamo-series-sel-qty" style="color:var(--color-success); font-weight:bold;">0</span> de <span id="prestamo-series-req-qty" style="font-weight:bold;">1</span>
-                </div>
-                <div class="series-grid" id="prestamo-series-container" style="display:flex; flex-wrap:wrap; gap:6px; max-height:120px; overflow-y:auto; padding:2px;">
-                    <!-- Chips inyectados -->
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="prestamo-observaciones">Observaciones / Motivo</label>
+                    <textarea class="form-textarea" id="prestamo-observaciones" placeholder="Ej: Préstamo para exhibición por 5 días..." style="width:100%; height:50px; resize:none;"></textarea>
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" for="prestamo-observaciones">Observaciones / Motivo</label>
-                <textarea class="form-textarea" id="prestamo-observaciones" placeholder="Ej: Préstamo para exhibición por 5 días..." style="width:100%; height:70px; resize:none;"></textarea>
+            <!-- Sección Agregar Producto -->
+            <div style="background:rgba(255, 255, 255, 0.02); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; display:flex; flex-direction:column; gap:12px;">
+                <h4 style="font-size:0.88rem; font-weight:700; color:var(--color-primary); margin:0;">Agregar Producto a la Salida</h4>
+                
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="prestamo-producto">Seleccionar Producto</label>
+                    <select class="form-select" id="prestamo-producto" style="width:100%;">
+                        <option value="">Seleccione Producto...</option>
+                        ${prestamoProductosDisponibles.map(p => `
+                            <option value="${p.id}" data-series="${p.maneja_series}" data-stock="${p.stock_actual}" data-moneda="${p.moneda || 'PEN'}" data-nombre="${p.nombre}">
+                                ${p.nombre}${p.marca ? ` (${p.marca})` : ''} (Stock: ${p.stock_actual})
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="prestamo-cantidad">Cantidad a Prestar</label>
+                        <input type="number" min="1" class="form-input" id="prestamo-cantidad" value="1" style="width:100%;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="prestamo-tipo-precio">Seleccionar Precio</label>
+                        <select class="form-select" id="prestamo-tipo-precio" style="width:100%;">
+                            <option value="Final">Público</option>
+                            <option value="Base">Mayorista</option>
+                            <option value="Manual">Manual</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" id="prestamo-precio-manual-group" style="display:none; margin-bottom:0;">
+                    <label class="form-label" for="prestamo-precio-manual">Precio Manual</label>
+                    <input type="number" step="0.01" min="0" class="form-input" id="prestamo-precio-manual" value="0.00" style="width:100%;">
+                </div>
+
+                <!-- Selector de series físicas (Sólo si maneja_series = 1) -->
+                <div id="prestamo-series-section" style="display:none; flex-direction:column; gap:8px; background:rgba(0,0,0,0.15); padding:14px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                    <span style="font-size:0.8rem; font-weight:600; color:var(--color-warning);">Seleccione Números de Serie:</span>
+                    <div id="prestamo-series-count" style="font-size:0.75rem; color:var(--text-muted);">
+                        Seleccionadas: <span id="prestamo-series-sel-qty" style="color:var(--color-success); font-weight:bold;">0</span> de <span id="prestamo-series-req-qty" style="font-weight:bold;">1</span>
+                    </div>
+                    <div class="series-grid" id="prestamo-series-container" style="display:flex; flex-wrap:wrap; gap:6px; max-height:120px; overflow-y:auto; padding:2px;">
+                        <!-- Chips inyectados -->
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-secondary" id="btn-agregar-item-prestamo" style="align-self:flex-end; display:inline-flex; align-items:center; gap:6px;">
+                    <i data-lucide="plus" style="width:16px; height:16px;"></i> Añadir a la Lista
+                </button>
+            </div>
+
+            <!-- Tabla de Ítems Agregados -->
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <h4 style="font-size:0.88rem; font-weight:700; color:var(--text-main); margin:0;">Productos en esta Salida</h4>
+                <div class="table-container" style="max-height:200px; overflow-y:auto;">
+                    <table class="data-table" style="width:100%; font-size:0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Precio Pactado</th>
+                                <th style="text-align:center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prestamo-items-agregados-body">
+                            <tr><td colspan="4" style="text-align:center; padding:12px; color:var(--text-muted);">Ningún producto agregado aún.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </form>
     `;
@@ -299,13 +332,62 @@ function abrirModalRegistrarPrestamo() {
 
     setupGlobalModal("Registrar Nueva Salida", bodyHtml, footerHtml);
     inicializarEventosPrestamos();
+    renderFormItemsPrestamo();
 }
+
+function renderFormItemsPrestamo() {
+    const tbody = document.getElementById('prestamo-items-agregados-body');
+    if (!tbody) return;
+
+    if (prestamoItemsList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:12px; color:var(--text-muted);">Ningún producto agregado aún.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = prestamoItemsList.map((item, index) => {
+        const seriesInfo = item.series && item.series.length > 0
+            ? `<div style="font-size:0.7rem; color:var(--color-info); font-family:monospace; margin-top:2px;">Series: ${item.series.join(', ')}</div>`
+            : '';
+            
+        let valorPrecio = item.precio_manual;
+        let tipoPrecioTexto = 'Público';
+        if (item.tipo_precio === 'Base') {
+            tipoPrecioTexto = 'Mayorista';
+        } else if (item.tipo_precio === 'Manual') {
+            tipoPrecioTexto = 'Manual';
+        }
+        
+        return `
+            <tr>
+                <td>
+                    <div style="font-weight:600;">${item.nombre}</div>
+                    ${seriesInfo}
+                </td>
+                <td>${item.cantidad} U.</td>
+                <td>${formatCurrency(valorPrecio, item.moneda)} <span style="font-size:0.7rem; color:var(--text-muted);">(${tipoPrecioTexto})</span></td>
+                <td style="text-align:center;">
+                    <button type="button" class="btn btn-danger btn-icon btn-sm" onclick="removerItemPrestamoForm(${index})" style="width:26px; height:26px; padding:0; border-radius:6px; display:inline-flex; align-items:center; justify-content:center;">
+                        <i data-lucide="trash-2" style="width:12px; height:12px;"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    lucide.createIcons();
+}
+
+window.removerItemPrestamoForm = function(index) {
+    prestamoItemsList.splice(index, 1);
+    renderFormItemsPrestamo();
+};
 
 function inicializarEventosPrestamos() {
     const selectProd = document.getElementById('prestamo-producto');
     const inputCant = document.getElementById('prestamo-cantidad');
     const selectTipoPrecio = document.getElementById('prestamo-tipo-precio');
     const groupPrecioManual = document.getElementById('prestamo-precio-manual-group');
+    const btnAgregarItem = document.getElementById('btn-agregar-item-prestamo');
 
     if (selectProd) {
         selectProd.addEventListener('change', async (e) => {
@@ -355,6 +437,87 @@ function inicializarEventosPrestamos() {
         });
     }
 
+    // Lógica para añadir ítem a la lista temporal
+    if (btnAgregarItem) {
+        btnAgregarItem.addEventListener('click', () => {
+            if (!selectProd.value) {
+                mostrarToast("Seleccione un producto.", "warning");
+                return;
+            }
+
+            const selectedOpt = selectProd.options[selectProd.selectedIndex];
+            const prodId = parseInt(selectProd.value);
+            const stockActual = parseInt(selectedOpt.getAttribute('data-stock'));
+            const manejaSeries = selectedOpt.getAttribute('data-series') === '1';
+            const moneda = selectedOpt.getAttribute('data-moneda') || 'PEN';
+            const prodNombre = selectedOpt.getAttribute('data-nombre');
+
+            const cantidad = parseInt(inputCant.value) || 0;
+            if (cantidad <= 0) {
+                mostrarToast("La cantidad debe ser mayor a 0.", "warning");
+                return;
+            }
+
+            if (cantidad > stockActual) {
+                mostrarToast(`Stock insuficiente. Solo hay ${stockActual} unidades disponibles.`, "warning");
+                return;
+            }
+
+            // Validar si el producto ya está en prestamoItemsList
+            if (prestamoItemsList.some(item => item.producto_id === prodId)) {
+                mostrarToast("Este producto ya está en la lista. Para cambiar la cantidad, remuévelo y agrégalo de nuevo.", "warning");
+                return;
+            }
+
+            if (manejaSeries && prestamoSeriesSeleccionadas.length !== cantidad) {
+                mostrarToast(`Debe seleccionar exactamente ${cantidad} series físicas.`, "warning");
+                return;
+            }
+
+            const tipoPrecio = selectTipoPrecio.value;
+            let precioUnitario = 0.00;
+            if (tipoPrecio === 'Manual') {
+                precioUnitario = parseFloat(document.getElementById('prestamo-precio-manual').value) || 0.00;
+                if (precioUnitario <= 0) {
+                    mostrarToast("Ingrese un precio manual válido.", "warning");
+                    return;
+                }
+            } else {
+                const prodCat = prestamoProductosDisponibles.find(p => p.id === prodId);
+                if (prodCat) {
+                    precioUnitario = tipoPrecio === 'Base' ? prodCat.precio_mayorista : prodCat.precio_final;
+                }
+            }
+
+            // Añadir al listado temporal
+            prestamoItemsList.push({
+                producto_id: prodId,
+                nombre: prodNombre,
+                cantidad: cantidad,
+                tipo_precio: tipoPrecio,
+                precio_manual: precioUnitario,
+                moneda: moneda,
+                series: manejaSeries ? [...prestamoSeriesSeleccionadas] : [],
+                maneja_series: manejaSeries ? 1 : 0
+            });
+
+            // Limpiar inputs de agregado
+            selectProd.value = "";
+            inputCant.value = 1;
+            selectTipoPrecio.value = "Final";
+            document.getElementById('prestamo-precio-manual').value = "0.00";
+            groupPrecioManual.style.display = 'none';
+            document.getElementById('prestamo-series-section').style.display = 'none';
+            
+            prestamoSeriesSeleccionadas = [];
+            prestamoProductoActivoManejaSeries = false;
+            prestamoProductoActivoId = null;
+
+            // Refrescar lista de ítems agregados
+            renderFormItemsPrestamo();
+        });
+    }
+
     // Registrar préstamo submit
     const form = document.getElementById('form-registrar-prestamo');
     if (form) {
@@ -362,30 +525,29 @@ function inicializarEventosPrestamos() {
             e.preventDefault();
             
             const tiendaDestinoId = parseInt(document.getElementById('prestamo-tienda').value);
-            const productoId = parseInt(document.getElementById('prestamo-producto').value);
-            const cantidad = parseInt(document.getElementById('prestamo-cantidad').value);
-            const observaciones = document.getElementById('prestamo-observaciones').value.trim();
-            const tipoPrecio = document.getElementById('prestamo-tipo-precio').value;
-            const precioManual = tipoPrecio === 'Manual' ? parseFloat(document.getElementById('prestamo-precio-manual').value || 0) : 0.00;
-
-            if (prestamoProductoActivoManejaSeries && prestamoSeriesSeleccionadas.length !== cantidad) {
-                mostrarToast(`Debe seleccionar exactamente ${cantidad} series físicas para el préstamo.`, "warning");
+            if (!tiendaDestinoId) {
+                mostrarToast("Seleccione la tienda destino.", "warning");
                 return;
             }
+
+            if (prestamoItemsList.length === 0) {
+                mostrarToast("Debe añadir al menos un producto a la lista.", "warning");
+                return;
+            }
+
+            const observaciones = document.getElementById('prestamo-observaciones').value.trim();
 
             const payload = {
                 tienda_destino_id: tiendaDestinoId,
                 usuario_id: usuarioActivo.id,
                 observaciones: observaciones,
-                items: [
-                    {
-                        producto_id: productoId,
-                        cantidad: cantidad,
-                        tipo_precio: tipoPrecio,
-                        precio_manual: precioManual,
-                        series: prestamoProductoActivoManejaSeries ? prestamoSeriesSeleccionadas : []
-                    }
-                ]
+                items: prestamoItemsList.map(item => ({
+                    producto_id: item.producto_id,
+                    cantidad: item.cantidad,
+                    tipo_precio: item.tipo_precio,
+                    precio_manual: item.precio_manual,
+                    series: item.series
+                }))
             };
 
             try {
@@ -406,7 +568,7 @@ function inicializarEventosPrestamos() {
                 }
             } catch (err) {
                 console.error(err);
-                mostrarToast("Error de conexión al guardar préstamo.", "danger");
+                mostrarToast("Error de conexión al registrar préstamo.", "danger");
             }
         });
     }
@@ -584,17 +746,29 @@ window.abrirDevolucionModal = function(prestamoId) {
         }
     });
 
-    if (seriesPrestadas.length === 0) {
-        // Si no tiene series (producto tradicional), mostramos campos para ingresar cantidades devueltas
-        container.innerHTML = prestamo.items.map(item => `
+    // Filtrar tradicionales (no manejan series)
+    const tradicionales = prestamo.items.filter(item => item.maneja_series !== 1);
+
+    let htmlContent = '';
+    
+    // 1. Mostrar tradicionales si hay
+    if (tradicionales.length > 0) {
+        htmlContent += `<div style="font-weight:700; font-size:0.85rem; color:var(--color-primary); margin-bottom:8px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">Productos Tradicionales</div>`;
+        htmlContent += tradicionales.map(item => `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
                 <span style="font-weight:600; font-size:0.85rem;">${item.producto_nombre}</span>
                 <input type="number" min="0" max="${item.cantidad}" class="form-input tradicional-devolucion-input" data-prod-id="${item.producto_id}" value="${item.cantidad}" style="width:70px; height:32px; padding:0 8px; text-align:right;">
             </div>
         `).join('');
-    } else {
-        // Mostrar checkboxes de cada serie prestada
-        container.innerHTML = seriesPrestadas.map(s => `
+    }
+
+    // 2. Mostrar series si hay
+    if (seriesPrestadas.length > 0) {
+        if (tradicionales.length > 0) {
+            htmlContent += `<div style="margin-top:16px;"></div>`;
+        }
+        htmlContent += `<div style="font-weight:700; font-size:0.85rem; color:var(--color-primary); margin-bottom:8px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">Productos con Números de Serie</div>`;
+        htmlContent += seriesPrestadas.map(s => `
             <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
                 <input type="checkbox" class="devolucion-serie-checkbox" value="${s.numero_serie}" id="chk-dev-sn-${s.numero_serie}" style="width:18px; height:18px; cursor:pointer;" checked>
                 <label for="chk-dev-sn-${s.numero_serie}" style="cursor:pointer; font-size:0.85rem; font-family:monospace; color:var(--text-main); flex-grow:1;">
@@ -603,6 +777,8 @@ window.abrirDevolucionModal = function(prestamoId) {
             </div>
         `).join('');
     }
+
+    container.innerHTML = htmlContent;
 
     openModal('prestamo-devolucion-modal');
 };

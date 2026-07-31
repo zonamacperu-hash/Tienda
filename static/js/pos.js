@@ -1054,8 +1054,8 @@ async function imprimirComprobantePDF(ventaId) {
                             ? `<div style="font-size:8px; color:#4f46e5; font-family:monospace; margin-top:2px;">S/N: ${d.series_vendidas.join(', ')}</div>` 
                             : '';
                         const garantiaText = d.meses_garantia > 0 
-                            ? `<span style="font-size:8px; background-color:#e0f2fe; color:#0369a1; padding:1px 3px; border-radius:2px; font-weight:600; margin-left:4px;">Garantía: ${d.meses_garantia} m</span>`
-                            : '<span style="font-size:8px; background-color:#f3f4f6; color:#6b7280; padding:1px 3px; border-radius:2px; margin-left:4px;">Sin gar.</span>';
+                            ? `<span style="display:inline-block; white-space:nowrap; vertical-align:middle; font-size:8px; background-color:#e0f2fe; color:#0369a1; padding:1px 3px; border-radius:2px; font-weight:600; margin-left:4px;">Garantía: ${d.meses_garantia} m</span>`
+                            : '<span style="display:inline-block; white-space:nowrap; vertical-align:middle; font-size:8px; background-color:#f3f4f6; color:#6b7280; padding:1px 3px; border-radius:2px; margin-left:4px;">Sin gar.</span>';
 
                         return `
                             <tr style="border-bottom:1px solid #e5e7eb;">

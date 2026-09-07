@@ -1050,9 +1050,22 @@ async function imprimirComprobantePDF(ventaId) {
                 </thead>
                 <tbody>
                     ${detalles.map(d => {
-                        const seriesText = d.series_vendidas.length > 0 
-                            ? `<div style="font-size:8px; color:#4f46e5; font-family:monospace; margin-top:2px;">S/N: ${d.series_vendidas.join(', ')}</div>` 
-                            : '';
+                        let seriesText = '';
+                        if (d.series_detalles && d.series_detalles.length > 0) {
+                            seriesText = d.series_detalles.map(s => {
+                                const detalleHtml = s.detalles_individuales 
+                                    ? `<div style="font-size:8px; color:#4b5563; margin-top:1px;"><strong>Detalle Físico:</strong> ${s.detalles_individuales}</div>` 
+                                    : '';
+                                return `
+                                    <div style="margin-top:2px;">
+                                        <div style="font-size:8px; color:#4f46e5; font-family:monospace;">S/N: ${s.numero_serie}</div>
+                                        ${detalleHtml}
+                                    </div>
+                                `;
+                            }).join('');
+                        } else if (d.series_vendidas && d.series_vendidas.length > 0) {
+                            seriesText = `<div style="font-size:8px; color:#4f46e5; font-family:monospace; margin-top:2px;">S/N: ${d.series_vendidas.join(', ')}</div>`;
+                        }
                         const garantiaText = d.meses_garantia > 0 
                             ? `<span style="display:inline-block; white-space:nowrap; vertical-align:middle; font-size:8px; background-color:#e0f2fe; color:#0369a1; padding:1px 3px; border-radius:2px; font-weight:600; margin-left:4px;">Garantía: ${d.meses_garantia} m</span>`
                             : '<span style="display:inline-block; white-space:nowrap; vertical-align:middle; font-size:8px; background-color:#f3f4f6; color:#6b7280; padding:1px 3px; border-radius:2px; margin-left:4px;">Sin gar.</span>';

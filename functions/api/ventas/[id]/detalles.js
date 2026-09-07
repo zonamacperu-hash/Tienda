@@ -16,12 +16,17 @@ export async function onRequestGet(context) {
       if (det.maneja_series === 1) {
         const series = await queryDb(
           env,
-          "SELECT numero_serie FROM producto_series WHERE venta_id = ? AND producto_id = ?",
+          "SELECT numero_serie, detalles_individuales FROM producto_series WHERE venta_id = ? AND producto_id = ?",
           [id, det.producto_id]
         );
         det.series_vendidas = series.map(s => s.numero_serie);
+        det.series_detalles = series.map(s => ({
+          numero_serie: s.numero_serie,
+          detalles_individuales: s.detalles_individuales || ""
+        }));
       } else {
         det.series_vendidas = [];
+        det.series_detalles = [];
       }
     }
 

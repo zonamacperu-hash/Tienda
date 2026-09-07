@@ -758,16 +758,24 @@ def venta_detalles(id):
     """
     detalles = query_db(query, [id])
     
-    # Agregar los números de serie vendidos en cada detalle
+    # Agregar los números de serie y detalles vendidos en cada detalle
     for det in detalles:
         if det['maneja_series'] == 1:
             series = query_db(
-                "SELECT numero_serie FROM producto_series WHERE venta_id = ? AND producto_id = ?",
+                "SELECT numero_serie, detalles_individuales FROM producto_series WHERE venta_id = ? AND producto_id = ?",
                 [id, det['producto_id']]
             )
             det['series_vendidas'] = [s['numero_serie'] for s in series]
+            det['series_detalles'] = [
+                {
+                    'numero_serie': s['numero_serie'],
+                    'detalles_individuales': s['detalles_individuales'] or ''
+                }
+                for s in series
+            ]
         else:
             det['series_vendidas'] = []
+            det['series_detalles'] = []
             
     return jsonify(detalles)
 

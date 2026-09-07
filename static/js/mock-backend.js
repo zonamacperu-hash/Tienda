@@ -1014,12 +1014,18 @@
             
             const result = details.map(d => {
                 const prod = prods.find(p => p.id === d.producto_id);
-                const sVendidas = series.filter(s => s.venta_id === ventaId && s.producto_id === d.producto_id).map(s => s.numero_serie);
+                const matchedSeries = series.filter(s => s.venta_id === ventaId && s.producto_id === d.producto_id);
+                const sVendidas = matchedSeries.map(s => s.numero_serie);
+                const sDetalles = matchedSeries.map(s => ({
+                    numero_serie: s.numero_serie,
+                    detalles_individuales: s.detalles_individuales || ''
+                }));
                 return {
                     ...d,
                     producto_nombre: prod ? prod.nombre : '',
                     maneja_series: prod ? prod.maneja_series : 0,
-                    series_vendidas: sVendidas
+                    series_vendidas: sVendidas,
+                    series_detalles: sDetalles
                 };
             });
             return jsonResponse(result);

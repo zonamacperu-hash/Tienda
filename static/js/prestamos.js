@@ -70,6 +70,7 @@ async function renderPrestamos(container) {
                                 <th>Items / Series</th>
                                 <th style="text-align:right;">Precio Pactado</th>
                                 <th>Estado</th>
+                                <th style="text-align:center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="prestamos-historial-body">
@@ -134,10 +135,18 @@ function renderTablasPrestamos() {
     } else {
         tbodyPendientes.innerHTML = pendientes.map(p => {
             const itemsHtml = p.items.map(item => {
-                const seriesBadge = item.series && item.series.length > 0
-                    ? `<div style="font-family:monospace; font-size:0.75rem; color:var(--color-primary); margin-top:2px;">S/N: ${item.series.map(s => `<span class="badge ${s.estado === 'Prestado' ? 'badge-warning' : 'badge-success'}">${s.numero_serie} (${s.estado})</span>`).join(' ')}</div>`
-                    : '';
-                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. ${seriesBadge}</div>`;
+                if (item.maneja_series === 1) {
+                    const seriesBadge = item.series && item.series.length > 0
+                        ? `<div style="font-family:monospace; font-size:0.75rem; color:var(--color-primary); margin-top:2px;">S/N: ${item.series.map(s => `<span class="badge ${s.estado === 'Prestado' ? 'badge-warning' : 'badge-secondary'}">${s.numero_serie} (${s.estado})</span>`).join(' ')}</div>`
+                        : '';
+                    return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. ${seriesBadge}</div>`;
+                } else {
+                    const dev = item.cantidad_devuelta || 0;
+                    const ven = item.cantidad_vendida || 0;
+                    const cantPend = Math.max(0, item.cantidad - dev - ven);
+                    const detalleDev = (dev > 0 || ven > 0) ? ` <span style="font-size:0.75rem; color:var(--text-muted);">(Total: ${item.cantidad}, Devueltas: ${dev}${ven > 0 ? `, Vendidas: ${ven}` : ''})</span>` : '';
+                    return `<div>• <strong>${item.producto_nombre}</strong> x <span style="font-weight:700; color:var(--color-primary);">${cantPend} U. pendientes</span>${detalleDev}</div>`;
+                }
             }).join('');
 
             const preciosHtml = p.items.map(item => {
@@ -181,14 +190,16 @@ function renderTablasPrestamos() {
 
     // 2. Historial
     if (historial.length === 0) {
-        tbodyHistorial.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">No hay préstamos cerrados en el historial.</td></tr>`;
+        tbodyHistorial.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No hay préstamos cerrados en el historial.</td></tr>`;
     } else {
         tbodyHistorial.innerHTML = historial.map(p => {
             const itemsHtml = p.items.map(item => {
                 const seriesBadge = item.series && item.series.length > 0
                     ? `<div style="font-family:monospace; font-size:0.75rem; color:var(--color-primary); margin-top:2px;">S/N: ${item.series.map(s => `<span class="badge ${s.estado === 'Vendido' || s.estado === 'En Garantia' ? 'badge-success' : 'badge-secondary'}">${s.numero_serie} (${s.estado})</span>`).join(' ')}</div>`
                     : '';
-                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. ${seriesBadge}</div>`;
+                const cantDev = item.cantidad_devuelta || 0;
+                const infoTrad = (item.maneja_series !== 1 && cantDev > 0) ? ` <span style="font-size:0.75rem; color:var(--text-muted);">(Devueltas: ${cantDev})</span>` : '';
+                return `<div>• <strong>${item.producto_nombre}</strong> x ${item.cantidad} U. ${infoTrad}${seriesBadge}</div>`;
             }).join('');
 
             const preciosHtml = p.items.map(item => {
@@ -215,6 +226,11 @@ function renderTablasPrestamos() {
                     <td>${itemsHtml}</td>
                     <td style="text-align:right; vertical-align:middle;">${preciosHtml}</td>
                     <td><span class="badge ${estadoClass}">${p.estado}</span></td>
+                    <td style="text-align:center;">
+                        <button class="btn btn-outline btn-icon btn-sm" onclick="reabrirPrestamo(${p.id}, '${(p.tienda_destino_nombre || '').replace(/'/g, "\\'")}')" title="Reabrir Préstamo (Pasar a Pendientes)" style="border-color:var(--color-primary); color:var(--color-primary); width:32px; height:32px; border-radius:8px; padding:0; display:inline-flex; align-items:center; justify-content:center;">
+                            <i data-lucide="rotate-ccw" style="width:14px; height:14px;"></i>
+                        </button>
+                    </td>
                 </tr>
             `;
         }).join('');
@@ -767,27 +783,33 @@ window.convertirPrestamoAVenta = async function(prestamoId) {
         // 1. Establecer el ID de préstamo activo para la venta
         conversionPrestamoId = prestamoId;
 
-        // 2. Mapear los productos a carritoPOS
+        // 2. Mapear los productos pendientes a carritoPOS
         carritoPOS = prestamo.items.map(item => {
             const seriesSeleccionadas = item.series
                 ? item.series.filter(s => s.estado === 'Prestado').map(s => s.numero_serie)
                 : [];
                 
+            const dev = item.cantidad_devuelta || 0;
+            const ven = item.cantidad_vendida || 0;
+            const cantPend = item.maneja_series === 1
+                ? seriesSeleccionadas.length
+                : Math.max(0, item.cantidad - dev - ven);
+
             return {
                 producto_id: item.producto_id,
                 nombre: item.producto_nombre,
-                cantidad: item.cantidad,
+                cantidad: cantPend,
                 maneja_series: item.maneja_series,
                 precio_base: item.precio_base,
                 precio_mayorista: item.precio_mayorista,
                 precio_final: item.precio_final,
                 moneda: item.moneda || 'PEN',
                 series_seleccionadas: seriesSeleccionadas,
-                tipo_precio: 'Final',
-                precio_manual: item.precio_final,
+                tipo_precio: item.tipo_precio || 'Final',
+                precio_manual: item.precio_manual || item.precio_final,
                 meses_garantia: 0
             };
-        });
+        }).filter(item => item.cantidad > 0);
 
         // 3. Cambiar a la pestaña POS
         const menuItems = document.querySelectorAll('.sidebar-menu .menu-item');
@@ -845,31 +867,64 @@ window.abrirDevolucionModal = function(prestamoId) {
         }
     });
 
-    // Filtrar tradicionales (no manejan series)
-    const tradicionales = prestamo.items.filter(item => item.maneja_series !== 1);
+    // Filtrar tradicionales que aún tengan saldo pendiente
+    const tradicionales = prestamo.items.filter(item => {
+        if (item.maneja_series === 1) return false;
+        const dev = item.cantidad_devuelta || 0;
+        const ven = item.cantidad_vendida || 0;
+        return (item.cantidad - dev - ven) > 0;
+    });
 
     let htmlContent = '';
+
+    // Botones de Selección Rápida
+    htmlContent += `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+            <span style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">Acciones Rápidas:</span>
+            <div style="display:flex; gap:8px;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="seleccionarTodoDevolucion(true)" style="padding:4px 10px; font-size:0.75rem; height:auto; display:inline-flex; align-items:center; gap:5px;">
+                    <i data-lucide="check-square" style="width:13px; height:13px;"></i> Devolver Todo
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="seleccionarTodoDevolucion(false)" style="padding:4px 10px; font-size:0.75rem; height:auto; display:inline-flex; align-items:center; gap:5px;">
+                    <i data-lucide="square" style="width:13px; height:13px;"></i> Devolver Ninguno (0)
+                </button>
+            </div>
+        </div>
+    `;
     
     // 1. Mostrar tradicionales si hay
     if (tradicionales.length > 0) {
-        htmlContent += `<div style="font-weight:700; font-size:0.85rem; color:var(--color-primary); margin-bottom:8px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">Productos Tradicionales</div>`;
-        htmlContent += tradicionales.map(item => `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                <span style="font-weight:600; font-size:0.85rem;">${item.producto_nombre}</span>
-                <input type="number" min="0" max="${item.cantidad}" class="form-input tradicional-devolucion-input" data-prod-id="${item.producto_id}" value="${item.cantidad}" style="width:70px; height:32px; padding:0 8px; text-align:right;">
+        htmlContent += `<div style="font-weight:700; font-size:0.85rem; color:var(--color-primary); margin-bottom:8px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">Productos Tradicionales (Sin Número de Serie)</div>`;
+        htmlContent += tradicionales.map(item => {
+            const dev = item.cantidad_devuelta || 0;
+            const ven = item.cantidad_vendida || 0;
+            const pendiente = Math.max(0, item.cantidad - dev - ven);
+            return `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div>
+                    <span style="font-weight:600; font-size:0.85rem;">${item.producto_nombre}</span>
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                        Prestado: ${item.cantidad} | <span style="color:var(--color-primary); font-weight:600;">Pendiente: ${pendiente} U.</span>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:0.75rem; color:var(--text-muted);">Devolver:</span>
+                    <input type="number" min="0" max="${pendiente}" class="form-input tradicional-devolucion-input" data-prod-id="${item.producto_id}" data-max="${pendiente}" value="${pendiente}" oninput="actualizarResumenDevolucion()" style="width:65px; height:32px; padding:0 8px; text-align:right;">
+                </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     // 2. Mostrar series si hay
     if (seriesPrestadas.length > 0) {
         if (tradicionales.length > 0) {
-            htmlContent += `<div style="margin-top:16px;"></div>`;
+            htmlContent += `<div style="margin-top:14px;"></div>`;
         }
         htmlContent += `<div style="font-weight:700; font-size:0.85rem; color:var(--color-primary); margin-bottom:8px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">Productos con Números de Serie</div>`;
         htmlContent += seriesPrestadas.map(s => `
             <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                <input type="checkbox" class="devolucion-serie-checkbox" value="${s.numero_serie}" id="chk-dev-sn-${s.numero_serie}" style="width:18px; height:18px; cursor:pointer;" checked>
+                <input type="checkbox" class="devolucion-serie-checkbox" value="${s.numero_serie}" id="chk-dev-sn-${s.numero_serie}" onchange="actualizarResumenDevolucion()" style="width:18px; height:18px; cursor:pointer;" checked>
                 <label for="chk-dev-sn-${s.numero_serie}" style="cursor:pointer; font-size:0.85rem; font-family:monospace; color:var(--text-main); flex-grow:1;">
                     ${s.numero_serie} <span style="font-size:0.75rem; color:var(--text-muted); font-family:'Inter'; margin-left:6px;">(${s.producto_nombre})</span>
                 </label>
@@ -877,9 +932,107 @@ window.abrirDevolucionModal = function(prestamoId) {
         `).join('');
     }
 
+    // 3. Cuadro de resumen dinámico
+    htmlContent += `
+        <div id="devolucion-resumen-box" style="margin-top:16px; padding:10px 12px; border-radius:var(--radius-sm); background:rgba(0,0,0,0.2); border:1px solid var(--border-color); font-size:0.8rem;">
+        </div>
+    `;
+
     container.innerHTML = htmlContent;
+    lucide.createIcons();
+    actualizarResumenDevolucion();
 
     openModal('prestamo-devolucion-modal');
+};
+
+// Funciones auxiliares de selección rápida y resumen
+window.seleccionarTodoDevolucion = function(marcarTodo) {
+    const seriesCheckboxes = document.querySelectorAll('.devolucion-serie-checkbox');
+    seriesCheckboxes.forEach(chk => { chk.checked = marcarTodo; });
+
+    const tradicionalesInputs = document.querySelectorAll('.tradicional-devolucion-input');
+    tradicionalesInputs.forEach(input => {
+        const maxVal = parseInt(input.getAttribute('data-max')) || 0;
+        input.value = marcarTodo ? maxVal : 0;
+    });
+
+    actualizarResumenDevolucion();
+};
+
+window.actualizarResumenDevolucion = function() {
+    const resumenBox = document.getElementById('devolucion-resumen-box');
+    if (!resumenBox) return;
+
+    const seriesCheckboxes = document.querySelectorAll('.devolucion-serie-checkbox');
+    const tradicionalesInputs = document.querySelectorAll('.tradicional-devolucion-input');
+
+    let totalSeries = seriesCheckboxes.length;
+    let seriesDevueltas = 0;
+    seriesCheckboxes.forEach(chk => { if (chk.checked) seriesDevueltas++; });
+    let seriesPendientes = totalSeries - seriesDevueltas;
+
+    let totalTradPend = 0;
+    let tradDevueltos = 0;
+    tradicionalesInputs.forEach(input => {
+        const maxVal = parseInt(input.getAttribute('data-max')) || 0;
+        let val = parseInt(input.value) || 0;
+        if (val < 0) val = 0;
+        if (val > maxVal) val = maxVal;
+        totalTradPend += maxVal;
+        tradDevueltos += val;
+    });
+    let tradPendientes = totalTradPend - tradDevueltos;
+
+    const itemsADevolver = seriesDevueltas + tradDevueltos;
+    const itemsRestantes = seriesPendientes + tradPendientes;
+
+    if (itemsADevolver === 0) {
+        resumenBox.innerHTML = `
+            <div style="color:var(--color-warning); font-weight:600;">
+                ⚠️ No se ha seleccionado ningún ítem para devolver. Debe marcar al menos 1 para procesar.
+            </div>
+        `;
+    } else if (itemsRestantes === 0) {
+        resumenBox.innerHTML = `
+            <div style="color:var(--color-success); font-weight:600;">
+                ✅ Retorno Total: Se devolverán ${itemsADevolver} ítem(s) al almacén. El préstamo se cerrará como <strong>Devuelto</strong>.
+            </div>
+        `;
+    } else {
+        resumenBox.innerHTML = `
+            <div style="color:var(--color-primary); font-weight:600;">
+                📦 Retorno Parcial: Se devolverán <strong>${itemsADevolver}</strong> ítem(s).
+            </div>
+            <div style="color:var(--text-muted); margin-top:4px;">
+                Continuarán en préstamo: <strong>${itemsRestantes}</strong> ítem(s). El préstamo permanecerá activo en estado <strong>Devuelto Parcial</strong>.
+            </div>
+        `;
+    }
+};
+
+// Reabrir préstamo cerrado
+window.reabrirPrestamo = async function(prestamoId, tiendaNombre) {
+    if (!confirm(`¿Está seguro de reabrir el préstamo #${prestamoId} de ${tiendaNombre || 'la tienda'}?\n\nEl préstamo volverá a la lista de 'Préstamos Pendientes' en estado 'Devuelto Parcial' para que pueda gestionar los ítems pendientes o facturarlos.`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/api/prestamos/${prestamoId}/reabrir`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.exito) {
+            mostrarToast(data.mensaje, "success");
+            await obtenerPrestamos();
+            renderTablasPrestamos();
+        } else {
+            mostrarToast(data.mensaje || "Error al reabrir el préstamo.", "danger");
+        }
+    } catch (err) {
+        console.error(err);
+        mostrarToast("Error de conexión al reabrir el préstamo.", "danger");
+    }
 };
 
 // Evento confirmar devolución de almacén
@@ -933,8 +1086,9 @@ document.getElementById('prestamo-devolucion-confirm-btn').addEventListener('cli
             mostrarToast(data.mensaje, "success");
             closeModal('prestamo-devolucion-modal');
             
-            // Recargar vista
-            await renderPrestamos(document.getElementById('main-view'));
+            // Recargar lista y tablas
+            await obtenerPrestamos();
+            renderTablasPrestamos();
         } else {
             mostrarToast(data.mensaje, "danger");
         }
@@ -943,3 +1097,4 @@ document.getElementById('prestamo-devolucion-confirm-btn').addEventListener('cli
         mostrarToast("Error de conexión al procesar el retorno.", "danger");
     }
 });
+

@@ -247,7 +247,11 @@ CREATE TABLE IF NOT EXISTS prestamo_detalles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     prestamo_id INTEGER NOT NULL REFERENCES prestamos_intertienda(id) ON DELETE CASCADE,
     producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
-    cantidad INTEGER NOT NULL CHECK (cantidad > 0)
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    cantidad_devuelta INTEGER NOT NULL DEFAULT 0,
+    cantidad_vendida INTEGER NOT NULL DEFAULT 0,
+    tipo_precio TEXT NOT NULL DEFAULT 'Final',
+    precio_manual REAL DEFAULT 0.00
 );
 
 -- ==============================================================================

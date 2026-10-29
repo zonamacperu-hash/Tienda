@@ -4,9 +4,17 @@ export async function onRequestPost(context) {
   const { params, request, env } = context;
   const id = params.id;
   try {
+    // Asegurar que existan las columnas de seguimiento en prestamo_detalles
+    try {
+      await env.DB.prepare("ALTER TABLE prestamo_detalles ADD COLUMN cantidad_devuelta INTEGER DEFAULT 0").run();
+    } catch (_) {}
+    try {
+      await env.DB.prepare("ALTER TABLE prestamo_detalles ADD COLUMN cantidad_vendida INTEGER DEFAULT 0").run();
+    } catch (_) {}
+
     const data = await request.json();
     const series_devueltas = data.series || []; // Array strings
-    const tradicionales = data.productos_tradicionales || []; // Array dicts
+    const tradicionales = data.productos_tradicionales || []; // Array dicts: [{producto_id, cantidad}]
 
     if (series_devueltas.length === 0 && tradicionales.length === 0) {
       return errorResponse("Debe especificar al menos un ítem para devolver.", 400);
@@ -52,7 +60,7 @@ export async function onRequestPost(context) {
 
       const det = await queryDb(
         env,
-        "SELECT id FROM prestamo_detalles WHERE prestamo_id = ? AND producto_id = ?",
+        "SELECT id, cantidad, COALESCE(cantidad_devuelta, 0) as cantidad_devuelta, COALESCE(cantidad_vendida, 0) as cantidad_vendida FROM prestamo_detalles WHERE prestamo_id = ? AND producto_id = ?",
         [id, prod_id],
         true
       );
@@ -61,31 +69,63 @@ export async function onRequestPost(context) {
         return errorResponse(`El producto con ID ${prod_id} no pertenece a este préstamo.`, 400);
       }
 
+      const pendienteActual = det.cantidad - det.cantidad_devuelta - det.cantidad_vendida;
+      if (cant_ret > pendienteActual) {
+        return errorResponse(`No puede devolver más de la cantidad pendiente (${pendienteActual}) para el producto ID ${prod_id}.`, 400);
+      }
+
       // Sumar stock
       statements.push(
         env.DB.prepare("UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?").bind(cant_ret, prod_id)
       );
+
+      // Registrar cantidad devuelta
+      statements.push(
+        env.DB.prepare("UPDATE prestamo_detalles SET cantidad_devuelta = COALESCE(cantidad_devuelta, 0) + ? WHERE id = ?").bind(cant_ret, det.id)
+      );
+    }
+
+    if (statements.length > 0) {
+      await env.DB.batch(statements);
     }
 
     // 3. Evaluar estado general final del préstamo en la DB
-    // Se ejecuta al final del batch
-    statements.push(
-      env.DB.prepare(`
-        UPDATE prestamos_intertienda
-        SET estado = CASE
-          WHEN (SELECT COUNT(*) FROM producto_series WHERE prestamo_id = ? AND estado = 'Prestado') = 0
-          THEN 'Devuelto'
-          ELSE 'Devuelto Parcial'
-        END
-        WHERE id = ?
-      `).bind(id, id)
+    const seriesPendientesRow = await queryDb(
+      env,
+      "SELECT COUNT(*) as cnt FROM producto_series WHERE prestamo_id = ? AND estado = 'Prestado'",
+      [id],
+      true
+    );
+    const numSeriesPendientes = seriesPendientesRow ? (seriesPendientesRow.cnt || 0) : 0;
+
+    const tradicionalesPendientesRows = await queryDb(
+      env,
+      `SELECT (pd.cantidad - COALESCE(pd.cantidad_devuelta, 0) - COALESCE(pd.cantidad_vendida, 0)) as pendiente
+       FROM prestamo_detalles pd
+       JOIN productos p ON pd.producto_id = p.id
+       WHERE pd.prestamo_id = ? AND p.maneja_series = 0`,
+      [id]
     );
 
-    await env.DB.batch(statements);
+    let tradPendientes = 0;
+    if (tradicionalesPendientesRows && tradicionalesPendientesRows.length > 0) {
+      for (const row of tradicionalesPendientesRows) {
+        if (row.pendiente > 0) {
+          tradPendientes += row.pendiente;
+        }
+      }
+    }
+
+    const nuevoEstado = (numSeriesPendientes === 0 && tradPendientes === 0) ? 'Devuelto' : 'Devuelto Parcial';
+
+    await executeDb(env, "UPDATE prestamos_intertienda SET estado = ? WHERE id = ?", [nuevoEstado, id]);
 
     return jsonResponse({
       exito: true,
-      mensaje: "Devolución procesada con éxito. Stock de almacén restaurado."
+      estado: nuevoEstado,
+      mensaje: nuevoEstado === 'Devuelto'
+        ? "Devolución completada en su totalidad. Stock de almacén restaurado."
+        : "Devolución parcial procesada con éxito. El préstamo continúa activo con los ítems pendientes."
     });
   } catch (err) {
     return errorResponse(`Error al procesar devolución: ${err.message}`, 400);

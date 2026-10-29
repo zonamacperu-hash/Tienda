@@ -99,6 +99,13 @@ def procesar_venta_transaccional(datos_venta):
                     "UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?",
                     (cantidad, producto_id)
                 )
+                try:
+                    cursor.execute(
+                        "UPDATE prestamo_detalles SET cantidad_vendida = COALESCE(cantidad_vendida, 0) + ? WHERE prestamo_id = ? AND producto_id = ?",
+                        (cantidad, prestamo_id, producto_id)
+                    )
+                except Exception:
+                    pass
             
             # Consultar y bloquear producto (SQLite no bloquea filas individuales con FOR UPDATE, 
             # pero la transacción atómica a nivel de conexión asegura exclusión mutua durante el COMMIT).
@@ -275,15 +282,23 @@ def procesar_venta_transaccional(datos_venta):
                 (nuevo_estado, venta_id, s['serie_id'])
             )
 
-        # 8b. SI LA VENTA PROVIENE DE UN PRÉSTAMO, ACTUALIZAR EL ESTADO DEL PRÉSTAMO
         if prestamo_id:
             # Contar cuántas series del préstamo siguen en estado 'Prestado'
             series_prestadas_restantes = cursor.execute(
                 "SELECT COUNT(*) FROM producto_series WHERE prestamo_id = ? AND estado = 'Prestado'",
                 (prestamo_id,)
             ).fetchone()[0]
+
+            trad_rows = cursor.execute("""
+                SELECT (pd.cantidad - COALESCE(pd.cantidad_devuelta, 0) - COALESCE(pd.cantidad_vendida, 0))
+                FROM prestamo_detalles pd
+                JOIN productos p ON pd.producto_id = p.id
+                WHERE pd.prestamo_id = ? AND p.maneja_series = 0
+            """, (prestamo_id,)).fetchall()
             
-            if series_prestadas_restantes == 0:
+            trad_pendientes_restantes = sum(max(0, r[0]) for r in trad_rows) if trad_rows else 0
+            
+            if series_prestadas_restantes == 0 and trad_pendientes_restantes == 0:
                 cursor.execute(
                     "UPDATE prestamos_intertienda SET estado = 'Convertido en Venta' WHERE id = ?",
                     (prestamo_id,)

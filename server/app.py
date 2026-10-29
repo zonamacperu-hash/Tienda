@@ -996,6 +996,16 @@ def process_return(id):
         
     try:
         with transaction() as cursor:
+            # Asegurar existencia de columnas de seguimiento
+            try:
+                cursor.execute("ALTER TABLE prestamo_detalles ADD COLUMN cantidad_devuelta INTEGER DEFAULT 0")
+            except Exception:
+                pass
+            try:
+                cursor.execute("ALTER TABLE prestamo_detalles ADD COLUMN cantidad_vendida INTEGER DEFAULT 0")
+            except Exception:
+                pass
+
             # Validar existencia del préstamo
             prestamo = cursor.execute(
                 "SELECT id, estado FROM prestamos_intertienda WHERE id = ?",
@@ -1007,7 +1017,6 @@ def process_return(id):
                 
             # 1. Procesar series devueltas
             for sn in series_devueltas:
-                # Buscar la serie
                 serie = cursor.execute("""
                     SELECT id, producto_id, estado
                     FROM producto_series
@@ -1019,14 +1028,12 @@ def process_return(id):
                     
                 serie_id, producto_id, estado = serie
                 
-                # Cambiar serie a Disponible y desvincular préstamo
                 cursor.execute("""
                     UPDATE producto_series
                     SET estado = 'Disponible', prestamo_id = NULL
                     WHERE id = ?
                 """, (serie_id,))
                 
-                # Incrementar stock del producto
                 cursor.execute("""
                     UPDATE productos
                     SET stock_actual = stock_actual + 1
@@ -1041,45 +1048,87 @@ def process_return(id):
                 if cant_ret <= 0:
                     continue
                     
-                # Validar que pertenezca al detalle del préstamo
                 det = cursor.execute("""
-                    SELECT id FROM prestamo_detalles
+                    SELECT id, cantidad, COALESCE(cantidad_devuelta, 0), COALESCE(cantidad_vendida, 0) FROM prestamo_detalles
                     WHERE prestamo_id = ? AND producto_id = ?
                 """, (id, prod_id)).fetchone()
                 
                 if not det:
                     raise ValueError(f"El producto con ID {prod_id} no pertenece a este préstamo.")
+                
+                det_id, det_cant, det_dev, det_ven = det
+                pendiente = det_cant - det_dev - det_ven
+                if cant_ret > pendiente:
+                    raise ValueError(f"No puede devolver más de la cantidad pendiente ({pendiente}) para el producto ID {prod_id}.")
                     
-                # Incrementar stock del producto
                 cursor.execute("""
                     UPDATE productos
                     SET stock_actual = stock_actual + ?
                     WHERE id = ?
                 """, (cant_ret, prod_id))
+
+                cursor.execute("""
+                    UPDATE prestamo_detalles
+                    SET cantidad_devuelta = COALESCE(cantidad_devuelta, 0) + ?
+                    WHERE id = ?
+                """, (cant_ret, det_id))
                 
             # 3. Actualizar estado general del préstamo
-            # Contar cuántas series de este préstamo siguen en estado 'Prestado'
-            pendientes = cursor.execute("""
+            series_pendientes = cursor.execute("""
                 SELECT COUNT(*) FROM producto_series
                 WHERE prestamo_id = ? AND estado = 'Prestado'
             """, (id,)).fetchone()[0]
-            
-            if pendientes == 0:
-                cursor.execute("""
-                    UPDATE prestamos_intertienda
-                    SET estado = 'Devuelto'
-                    WHERE id = ?
-                """, (id,))
+
+            trad_rows = cursor.execute("""
+                SELECT (pd.cantidad - COALESCE(pd.cantidad_devuelta, 0) - COALESCE(pd.cantidad_vendida, 0))
+                FROM prestamo_detalles pd
+                JOIN productos p ON pd.producto_id = p.id
+                WHERE pd.prestamo_id = ? AND p.maneja_series = 0
+            """, (id,)).fetchall()
+
+            trad_pendientes = sum(max(0, r[0]) for r in trad_rows) if trad_rows else 0
+
+            if series_pendientes == 0 and trad_pendientes == 0:
+                nuevo_estado = 'Devuelto'
             else:
-                cursor.execute("""
-                    UPDATE prestamos_intertienda
-                    SET estado = 'Devuelto Parcial'
-                    WHERE id = ?
-                """, (id,))
+                nuevo_estado = 'Devuelto Parcial'
                 
-        return jsonify({"exito": True, "mensaje": "Devolución procesada con éxito. Stock de almacén restaurado."})
+            cursor.execute("""
+                UPDATE prestamos_intertienda
+                SET estado = ?
+                WHERE id = ?
+            """, (nuevo_estado, id))
+                
+        return jsonify({
+            "exito": True,
+            "estado": nuevo_estado,
+            "mensaje": "Devolución completada en su totalidad. Stock restaurado." if nuevo_estado == 'Devuelto' else "Devolución parcial procesada con éxito. El préstamo continúa activo con los ítems pendientes."
+        })
     except Exception as e:
         return jsonify({"exito": False, "mensaje": f"Error: {str(e)}"}), 400
+
+@app.route('/api/prestamos/<int:id>/reabrir', methods=['POST'])
+def reabrir_prestamo(id):
+    try:
+        with transaction() as cursor:
+            prestamo = cursor.execute(
+                "SELECT id, estado FROM prestamos_intertienda WHERE id = ?",
+                (id,)
+            ).fetchone()
+            if not prestamo:
+                return jsonify({"exito": False, "mensaje": f"El préstamo con ID {id} no existe."}), 404
+            
+            cursor.execute(
+                "UPDATE prestamos_intertienda SET estado = 'Devuelto Parcial' WHERE id = ?",
+                (id,)
+            )
+        return jsonify({
+            "exito": True,
+            "mensaje": f"Préstamo #{id} reabierto con éxito. Ahora se encuentra en 'Préstamos Pendientes'."
+        })
+    except Exception as e:
+        return jsonify({"exito": False, "mensaje": f"Error al reabrir préstamo: {str(e)}"}), 500
+
 
 # ==============================================================================
 # MÓDULO: REPORTES Y UTILIDADES (Backend Analytics)

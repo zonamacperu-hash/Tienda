@@ -102,6 +102,9 @@ export async function onRequestPost(context) {
         statements.push(
           env.DB.prepare("UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?").bind(cantidad, producto_id)
         );
+        statements.push(
+          env.DB.prepare("UPDATE prestamo_detalles SET cantidad_vendida = COALESCE(cantidad_vendida, 0) + ? WHERE prestamo_id = ? AND producto_id = ?").bind(cantidad, prestamo_id, producto_id)
+        );
       }
 
       // Consultar producto
@@ -289,11 +292,12 @@ export async function onRequestPost(context) {
           UPDATE prestamos_intertienda 
           SET estado = CASE 
             WHEN (SELECT COUNT(*) FROM producto_series WHERE prestamo_id = ? AND estado = 'Prestado') = 0 
+             AND (SELECT COUNT(*) FROM prestamo_detalles pd JOIN productos p ON pd.producto_id = p.id WHERE pd.prestamo_id = ? AND p.maneja_series = 0 AND (pd.cantidad - COALESCE(pd.cantidad_devuelta, 0) - COALESCE(pd.cantidad_vendida, 0)) > 0) = 0
             THEN 'Convertido en Venta' 
             ELSE 'Devuelto Parcial' 
           END
           WHERE id = ?
-        `).bind(prestamo_id, prestamo_id)
+        `).bind(prestamo_id, prestamo_id, prestamo_id)
       );
     }
 
